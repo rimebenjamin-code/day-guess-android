@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Day Guess</title>
+<meta name="theme-color" content="#3b5bdb">
+<meta name="description" content="Trouve le jour de la semaine de dates tirées au hasard.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Day Guess">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<style>
+  :root{
+    --bg:#f6f5f2; --card:#ffffff; --ink:#1f2328; --soft:#6b7078; --line:#e2e0db;
+    --accent:#3b5bdb; --accent-tx:#ffffff; --ok:#2f9e44; --ok-bg:#e6f4ea; --ko:#e03131; --ko-bg:#fdecec;
+    --active:#edf1ff;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#16181c; --card:#1f2228; --ink:#e8e9eb; --soft:#9aa0a8; --line:#33373f;
+      --accent:#748ffc; --accent-tx:#10131a; --ok:#69db7c; --ok-bg:#1d3324; --ko:#ff8787; --ko-bg:#3a1f22;
+      --active:#262c3d;
+    }
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;}
+  main{max-width:720px;margin:0 auto;padding:calc(28px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) calc(60px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));}
+  button,.item,label.chk{touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;}
+  h1{font-size:26px;margin:0 0 4px;letter-spacing:-.01em;}
+  .sub{color:var(--soft);font-size:14px;margin:0 0 22px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px;}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+  .label{font-size:13px;color:var(--soft);margin-right:4px;}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;}
+  .seg button{border:0;background:transparent;color:var(--ink);padding:7px 16px;font-size:14px;cursor:pointer;font-variant-numeric:tabular-nums;}
+  .seg button.on{background:var(--accent);color:var(--accent-tx);font-weight:600;}
+  .seg button:disabled{cursor:default;opacity:.6;}
+  label.chk{display:inline-flex;gap:6px;align-items:center;font-size:14px;cursor:pointer;}
+  .btn{border:0;border-radius:8px;padding:10px 18px;font-size:15px;font-weight:600;cursor:pointer;}
+  .btn-primary{background:var(--accent);color:var(--accent-tx);}
+  .btn-ghost{background:transparent;color:var(--soft);border:1px solid var(--line);}
+  .timer{margin-left:auto;font-size:28px;font-weight:700;font-variant-numeric:tabular-nums;}
+  .list{display:flex;flex-direction:column;gap:6px;}
+  .item{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;cursor:pointer;}
+  .item.active{background:var(--active);border-color:var(--accent);}
+  .item.ok{background:var(--ok-bg);border-color:var(--ok);}
+  .item.ko{background:var(--ko-bg);border-color:var(--ko);}
+  .item .n{width:26px;color:var(--soft);font-size:13px;font-variant-numeric:tabular-nums;}
+  .item .d{font-size:20px;font-weight:600;font-variant-numeric:tabular-nums;min-width:130px;}
+  .item .a{margin-left:auto;font-size:14px;color:var(--soft);text-align:right;}
+  .item.ok .a{color:var(--ok);} .item.ko .a{color:var(--ko);}
+  .big .item .d{font-size:34px;}
+  .days{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:14px;position:sticky;bottom:0;background:var(--card);padding:8px 0 calc(4px + env(safe-area-inset-bottom));}
+  .days .short{display:none;}
+  .days button:active:not(:disabled){background:var(--active);}
+  .days button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:12px 0;font-size:14px;cursor:pointer;}
+  .days button:hover:not(:disabled){border-color:var(--accent);}
+  .days button:disabled{opacity:.45;cursor:default;}
+  .days small{display:block;color:var(--soft);font-size:11px;margin-top:2px;}
+  .result{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+  .stat{border:1px solid var(--line);border-radius:8px;padding:10px;}
+  .stat .v{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;}
+  .stat .k{font-size:12px;color:var(--soft);}
+  table{width:100%;border-collapse:collapse;font-size:14px;}
+  th,td{text-align:left;padding:6px 4px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums;}
+  th{font-size:12px;color:var(--soft);font-weight:600;}
+  .hint{font-size:12px;color:var(--soft);margin-top:10px;}
+  .hidden{display:none;}
+  input[type=text]{padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font-size:16px;}
+  @media (hover:none){ .hint{display:none;} }
+  @media (max-width:520px){
+    h1{font-size:22px;}
+    .sub{margin-bottom:14px;}
+    .card{padding:14px;}
+    .seg button{padding:9px 14px;}
+    .days{gap:4px;}
+    .days button{font-size:15px;font-weight:600;padding:16px 0;}
+    .days .long, .days small{display:none;}
+    .days .short{display:inline;}
+    .result{grid-template-columns:repeat(2,1fr);}
+    .item{padding:9px 10px;}
+    .item .d{font-size:19px;min-width:0;}
+    .timer{font-size:24px;}
+    .hide-sm{display:none;}
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Day Guess</h1>
+  <p class="sub">Trouve le jour de la semaine de dates tirées au hasard.</p>
+
+  <div class="card">
+    <div class="row">
+      <span class="label">Nombre de dates</span>
+      <div class="seg" id="countSeg">
+        <button data-n="1">1</button><button data-n="3">3</button><button data-n="5">5</button><button data-n="20" class="on">20</button>
+      </div>
+      <span class="label" style="margin-left:8px;">Période</span>
+      <div class="seg" id="rangeSeg">
+        <button data-r="modern" class="on">1900 – 2100</button><button data-r="full">0001 – 3000</button>
+      </div>
+    </div>
+    <div class="row" style="margin-top:12px;">
+      <label class="chk" title="Comme la feuille « Test 2 » : chaque date s'affiche quelques secondes puis disparaît"><input type="checkbox" id="memMode"> Mode mémoire (date masquée après 4 s)</label>
+    </div>
+    <div class="row" style="margin-top:14px;">
+      <button class="btn btn-primary" id="startBtn">Démarrer</button>
+      <button class="btn btn-ghost hidden" id="stopBtn">Terminer</button>
+      <span class="timer" id="timer">0:00.0</span>
+    </div>
+  </div>
+
+  <div class="card hidden" id="playCard">
+    <div class="list" id="list"></div>
+    <div class="days" id="days"></div>
+    <p class="hint">Clavier : 1 = lundi … 7 = dimanche. ↑/↓ pour changer de date. Clique sur une date pour corriger ta réponse.</p>
+  </div>
+
+  <div class="card hidden" id="resultCard">
+    <div class="result">
+      <div class="stat"><div class="v" id="rScore">–</div><div class="k">Score (0 à 20)</div></div>
+      <div class="stat"><div class="v" id="rRate">–</div><div class="k">Taux de réussite</div></div>
+      <div class="stat"><div class="v" id="rTime">–</div><div class="k">Temps total</div></div>
+      <div class="stat"><div class="v" id="rPer">–</div><div class="k">Temps / bonne réponse</div></div>
+    </div>
+    <div class="row" style="margin-top:14px;" id="saveRow">
+      <input type="text" id="nameInput" placeholder="Nom" maxlength="20">
+      <button class="btn btn-primary" id="saveBtn">Enregistrer le score</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="row" style="margin-bottom:8px;">
+      <strong>Meilleurs scores</strong>
+      <span class="label" id="hsLabel" style="margin-left:auto;"></span>
+    </div>
+    <table>
+      <thead><tr><th>#</th><th>Score</th><th>Nom</th><th class="hide-sm">Date</th><th>Réussite</th><th>Temps / rép.</th></tr></thead>
+      <tbody id="hsBody"></tbody>
+    </table>
+  </div>
+</main>
+
+<script>
+const DAYS = ["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"]; // index 0 = lundi
+const DAYS_SHORT = ["lu","ma","me","je","ve","sa","di"];
+// Calendrier grégorien proleptique (celui de JavaScript) : aussi appliqué avant 1582,
+// sans le passage julien → grégorien.
+const RANGES = {
+  modern: {from:[1900,0,1], to:[2100,11,31], label:"1900 – 2100"},
+  full:   {from:[1,0,1],    to:[3000,11,31], label:"0001 – 3000"}
+};
+let range = "modern";
+const MEM_MS = 4000;
+
+let count = 20, items = [], active = 0, running = false, t0 = 0, tEnd = 0, tick = null, memTimer = null, lastResult = null;
+
+const $ = id => document.getElementById(id);
+
+// Date.UTC interprète les années 0–99 comme 1900–1999 → passer par setUTCFullYear.
+function utc(y,m,d){ const t = new Date(Date.UTC(2000,0,1)); t.setUTCFullYear(y,m,d); return t.getTime(); }
+function randomDate(){
+  const r = RANGES[range];
+  const a = utc(...r.from), b = utc(...r.to);
+  const days = Math.round((b-a)/86400000);
+  return new Date(a + Math.floor(Math.random()*(days+1))*86400000);
+}
+function weekdayIdx(d){ return (d.getUTCDay()+6)%7; } // lundi = 0
+function fmtDate(d){
+  const p = n => String(n).padStart(2,"0");
+  return p(d.getUTCDate())+"."+p(d.getUTCMonth()+1)+"."+String(d.getUTCFullYear()).padStart(4,"0");
+}
+function fmtTime(ms){
+  const s = ms/1000, m = Math.floor(s/60);
+  return m+":"+(s-m*60).toFixed(1).padStart(4,"0");
+}
+
+// Formule du fichier Excel (onglet « Test », G28) :
+// r = taux de réussite, t = secondes par bonne réponse
+function computeScore(r, t){
+  if(r<=0 || !isFinite(t)) return 0;
+  const s = (38*r)/(1+Math.pow(1.07, t-6.85)) - 15*Math.exp(1/(5+t*r)) + 15;
+  return Math.max(0, Math.min(20, s));
+}
+
+function buildDays(){
+  $("days").innerHTML = DAYS.map((d,i)=>`<button data-i="${i}"><span class="long">${d}</span><span class="short">${DAYS_SHORT[i]}</span><small>${i+1}</small></button>`).join("");
+  $("days").querySelectorAll("button").forEach(b => b.onclick = () => answer(+b.dataset.i));
+}
+
+function render(){
+  $("list").classList.toggle("big", count===1);
+  $("list").innerHTML = items.map((it,i)=>{
+    const cls = ["item"];
+    if(it.answer!=null) cls.push(it.answer===it.correct ? "ok" : "ko");
+    if(running && i===active) cls.push("active");
+    const showDate = !it.masked || !running;
+    let a = "";
+    if(it.answer!=null){
+      a = DAYS[it.answer] + (it.answer===it.correct ? " ✓" : ` ✗ <br><small>${DAYS[it.correct]}</small>`);
+    }
+    return `<div class="${cls.join(" ")}" data-i="${i}"><span class="n">${i+1}</span><span class="d">${showDate?fmtDate(it.date):"••.••.••••"}</span><span class="a">${a}</span></div>`;
+  }).join("");
+  $("list").querySelectorAll(".item").forEach(el => el.onclick = () => { if(running){ setActive(+el.dataset.i); } });
+  $("days").querySelectorAll("button").forEach(b => b.disabled = !running);
+}
+
+function setActive(i){
+  active = i;
+  scheduleMask();
+  render();
+  // Sur smartphone, la date active doit rester visible au-dessus de la barre des jours
+  const el = $("list").children[i];
+  if(el) el.scrollIntoView({block:"nearest", behavior:"smooth"});
+}
+
+function scheduleMask(){
+  clearTimeout(memTimer);
+  if(!$("memMode").checked || !running) return;
+  const it = items[active];
+  if(it.masked || it.answer!=null) return;
+  memTimer = setTimeout(()=>{ it.masked = true; render(); }, MEM_MS);
+}
+
+function start(){
+  items = Array.from({length:count}, () => { const d = randomDate(); return {date:d, correct:weekdayIdx(d), answer:null, masked:false}; });
+  active = 0; running = true; lastResult = null;
+  t0 = performance.now();
+  clearInterval(tick);
+  tick = setInterval(()=>{ $("timer").textContent = fmtTime(performance.now()-t0); }, 100);
+  $("playCard").classList.remove("hidden");
+  $("resultCard").classList.add("hidden");
+  $("startBtn").textContent = "Recommencer";
+  $("stopBtn").classList.remove("hidden");
+  lockSettings(true);
+  scheduleMask();
+  render();
+}
+
+function answer(i){
+  if(!running) return;
+  items[active].answer = i;
+  if($("memMode").checked) items[active].masked = true;
+  const next = items.findIndex((it,k)=>k>active && it.answer==null);
+  const any = next>=0 ? next : items.findIndex(it=>it.answer==null);
+  if(any<0){ finish(); return; }
+  setActive(any);
+}
+
+function finish(){
+  if(!running) return;
+  running = false;
+  tEnd = performance.now();
+  clearInterval(tick); clearTimeout(memTimer);
+  const total = tEnd - t0;
+  $("timer").textContent = fmtTime(total);
+  const answered = items.filter(it=>it.answer!=null);
+  const okN = answered.filter(it=>it.answer===it.correct).length;
+  // Comme l'Excel : taux = bonnes / (bonnes + fausses), les dates sans réponse ne comptent pas
+  const rate = answered.length ? okN/answered.length : 0;
+  const per = okN ? total/1000/okN : Infinity;
+  const score = computeScore(rate, per);
+  lastResult = {score, rate, per, total, n:count, mem:$("memMode").checked, range, ok:okN, answered:answered.length};
+  $("rScore").textContent = score.toFixed(2);
+  $("rRate").textContent = Math.round(rate*100)+" %";
+  $("rTime").textContent = fmtTime(total);
+  $("rPer").textContent = isFinite(per) ? per.toFixed(1)+" s" : "–";
+  $("resultCard").classList.remove("hidden");
+  $("saveRow").classList.toggle("hidden", okN===0);
+  $("saveBtn").disabled = false; $("saveBtn").textContent = "Enregistrer le score";
+  $("stopBtn").classList.add("hidden");
+  lockSettings(false);
+  render();
+  $("nameInput").value = loadName();
+}
+
+function lockSettings(lock){
+  $("countSeg").querySelectorAll("button").forEach(b=>b.disabled=lock);
+  $("rangeSeg").querySelectorAll("button").forEach(b=>b.disabled=lock);
+  $("memMode").disabled = lock;
+}
+
+// ---- Meilleurs scores (stockés dans ce navigateur, un tableau par nombre de dates / mode) ----
+function hsKey(n, mem, rg){ return "dayguess.hs."+n+(mem?".mem":"")+(rg==="full"?".full":""); }
+function loadHs(n, mem, rg){ try{ return JSON.parse(localStorage.getItem(hsKey(n,mem,rg))) || []; }catch(e){ return []; } }
+function saveHs(n, mem, rg, list){ try{ localStorage.setItem(hsKey(n,mem,rg), JSON.stringify(list)); }catch(e){} }
+function loadName(){ try{ return localStorage.getItem("dayguess.name") || ""; }catch(e){ return ""; } }
+function saveName(v){ try{ localStorage.setItem("dayguess.name", v); }catch(e){} }
+
+function renderHs(){
+  const mem = $("memMode").checked;
+  $("hsLabel").textContent = count+(count>1?" dates":" date")+" · "+RANGES[range].label+(mem?" · mode mémoire":"");
+  const list = loadHs(count, mem, range);
+  $("hsBody").innerHTML = list.length ? list.map((h,i)=>`<tr><td>${i+1}</td><td><strong>${h.score.toFixed(2)}</strong></td><td>${escHtml(h.name)}</td><td class="hide-sm">${h.date}</td><td>${Math.round(h.rate*100)} %</td><td>${h.per.toFixed(1)} s</td></tr>`).join("")
+    : `<tr><td colspan="6" style="color:var(--soft)">Aucun score pour l'instant.</td></tr>`;
+}
+function escHtml(s){ return String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+$("saveBtn").onclick = () => {
+  if(!lastResult) return;
+  const name = $("nameInput").value.trim() || "Anonyme";
+  saveName(name);
+  const list = loadHs(lastResult.n, lastResult.mem, lastResult.range);
+  list.push({score:lastResult.score, name, date:new Date().toLocaleDateString("fr-CH"), rate:lastResult.rate, per:lastResult.per});
+  list.sort((a,b)=>b.score-a.score);
+  saveHs(lastResult.n, lastResult.mem, lastResult.range, list.slice(0,10));
+  $("saveBtn").disabled = true; $("saveBtn").textContent = "Enregistré";
+  renderHs();
+};
+
+$("countSeg").querySelectorAll("button").forEach(b => b.onclick = () => {
+  count = +b.dataset.n;
+  $("countSeg").querySelectorAll("button").forEach(x=>x.classList.toggle("on", x===b));
+  renderHs();
+});
+$("rangeSeg").querySelectorAll("button").forEach(b => b.onclick = () => {
+  range = b.dataset.r;
+  $("rangeSeg").querySelectorAll("button").forEach(x=>x.classList.toggle("on", x===b));
+  renderHs();
+});
+$("memMode").onchange = renderHs;
+$("startBtn").onclick = start;
+$("stopBtn").onclick = finish;
+
+document.addEventListener("keydown", e => {
+  if(e.target.tagName==="INPUT" && e.target.type==="text") return;
+  if(!running){
+    if(e.key==="Enter"){ e.preventDefault(); start(); }
+    return;
+  }
+  if(/^[1-7]$/.test(e.key)){ e.preventDefault(); answer(+e.key-1); }
+  else if(e.key==="ArrowDown"){ e.preventDefault(); setActive(Math.min(items.length-1, active+1)); }
+  else if(e.key==="ArrowUp"){ e.preventDefault(); setActive(Math.max(0, active-1)); }
+});
+
+buildDays();
+renderHs();
+render();
+
+// Application installable / hors ligne (nécessite https ou localhost)
+if("serviceWorker" in navigator && location.protocol!=="file:"){
+  navigator.serviceWorker.register("sw.js").catch(()=>{});
+}
+</script>
+</body>
+</html>

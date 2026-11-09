@@ -108,22 +108,98 @@
   .qbtns button:active{background:var(--active);}
   .qq{font-size:18px;margin:12px 0 4px;}
   .qfb{min-height:22px;font-size:14px;color:var(--soft);}
+
+  .mhelp{font-size:13px;color:var(--soft);margin:0 0 12px;line-height:1.4;}
+  .timer.low{color:var(--ko);}
+  .bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-bottom:10px;}
+  .bar i{display:block;height:100%;width:100%;background:var(--accent);}
+  #compInfo{margin-bottom:10px;font-size:16px;}
+
+  /* ---- Thèmes par mode : décor derrière les cartes, texte lisible grâce aux cartes "verre" ---- */
+  :root{ --glass:rgba(255,255,255,.88); }
+  @media (prefers-color-scheme: dark){ :root{ --glass:rgba(31,34,40,.88); } }
+  #bgScene{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden;}
+  #bgScene svg{width:100%;height:100%;display:block;}
+  body{transition:background .2s;}
+  .card{transition:background .2s;}
+  body[data-mode="classic"] .card, body[data-mode="streak"] .card, body[data-mode="sprint"] .card{background:var(--glass);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);}
+  body[data-mode="classic"] .head, body[data-mode="streak"] .head, body[data-mode="sprint"] .head{background:var(--glass);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin-bottom:16px;-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);}
+  body[data-mode="classic"] .head .sub, body[data-mode="streak"] .head .sub, body[data-mode="sprint"] .head .sub{margin:0;}
+  body[data-mode="classic"] .head h1, body[data-mode="streak"] .head h1, body[data-mode="sprint"] .head h1{margin-bottom:2px;}
+  @media (prefers-color-scheme: dark){
+    body[data-mode="classic"] #bgScene, body[data-mode="sprint"] #bgScene{filter:brightness(.55);}
+  }
+  /* Survie : toujours sombre */
+  body[data-mode="streak"]{--bg:#1a0603;--card:rgba(32,10,6,.92);--glass:rgba(32,10,6,.88);--ink:#ffeede;--soft:#e7b79a;--line:#8a3213;--accent:#ff7a1a;--accent-tx:#1b0600;--active:#4a1a0b;--ok:#7be28f;--ok-bg:#183a20;--ko:#ff8a7a;--ko-bg:#4a1512;}
+  /* Flash : tout blanc, puis tout noir (seuls les boutons des jours restent visibles) */
+  body.fl-white{--bg:#fff;--card:#fff;--ink:#111;--soft:#555;--line:#ddd;--accent:#111;--accent-tx:#fff;--active:#eee;--ok:#2f9e44;--ok-bg:#e6f4ea;--ko:#e03131;--ko-bg:#fdecec;}
+  body.fl-black{--bg:#000;--card:#000;--ink:#fff;--soft:#888;--line:#333;--active:#111;}
+  body.fl-black .head, body.fl-black .tabs, body.fl-black #tabGame > .card:not(#playCard), body.fl-black #list, body.fl-black #compInfo, body.fl-black #playCard .hint{visibility:hidden;}
+  body.fl-black .days button{background:#fff;color:#000;border-color:#fff;}
+  body.fl-black .days small{color:#555;}
+  body.fl-black .card{border-color:#000;box-shadow:none;}
+  body.fl-run .item:not(.active){display:none;}
+  /* Animations du décor */
+  @keyframes drift{0%{transform:translate(0,-20px) rotate(0);opacity:0}10%{opacity:.9}100%{transform:translate(-140px,780px) rotate(360deg);opacity:0}}
+  @keyframes rise{0%{transform:translateY(0);opacity:0}15%{opacity:1}100%{transform:translateY(-420px);opacity:0}}
+  @keyframes flick{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.2)}}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .petal{animation:drift linear infinite;}
+  .ember{animation:rise linear infinite;}
+  .flame{transform-box:fill-box;transform-origin:50% 100%;animation:flick .9s ease-in-out infinite;}
+  .hand{transform-origin:500px 380px;animation:spin 60s linear infinite;}
+  @media (prefers-reduced-motion: reduce){ #bgScene *{animation:none !important;} }
+
+  /* ---- Points, boutique, trophées ---- */
+  .pts{font-weight:700;font-size:15px;background:var(--active);border:1px solid var(--accent);border-radius:999px;padding:4px 12px;white-space:nowrap;cursor:pointer;}
+  .gain{margin-top:12px;font-weight:700;color:var(--ok);}
+  .shop-item{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;}
+  .shop-item .ico{font-size:28px;}
+  .shop-item .t{flex:1;min-width:0;}
+  .shop-item .t b{display:block;}
+  .shop-item .t small{color:var(--soft);font-size:13px;line-height:1.35;display:block;}
+  .shop-item .btn{padding:8px 14px;font-size:14px;white-space:nowrap;}
+  .shop-item .btn:disabled{opacity:.45;cursor:default;}
+  .shop-item .own{color:var(--ok);font-weight:700;white-space:nowrap;}
+  .trophies{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;}
+  .tro{border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center;}
+  .tro .ico{font-size:38px;}
+  .tro b{display:block;margin-top:4px;}
+  .tro small{display:block;color:var(--soft);font-size:12px;margin-top:4px;line-height:1.35;}
+  .tro.got{border-color:var(--accent);background:var(--active);}
+  .tro.lock{opacity:.55;filter:grayscale(1);}
+  .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-size:14px;font-weight:600;z-index:50;max-width:90vw;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,.35);}
 </style>
 </head>
 <body>
+<div id="bgScene" aria-hidden="true"></div>
 <main>
-  <h1>Day Guess</h1>
+  <div class="head">
+  <div class="row" style="justify-content:space-between;flex-wrap:nowrap;"><h1>Day Guess</h1><span class="pts" id="pts" onclick="showTab('shop')" title="Boutique"></span></div>
   <p class="sub">Trouve le jour de la semaine de dates tirées au hasard.</p>
+  </div>
 
   <div class="tabs" role="tablist">
     <button class="tab on" data-tab="game" role="tab">Jeu</button>
     <button class="tab" data-tab="theory" role="tab">Théorie</button>
+    <button class="tab" data-tab="shop" role="tab">Boutique</button>
+    <button class="tab" data-tab="trophy" role="tab">Trophées</button>
   </div>
   <div id="tabGame">
 
   <div class="card">
+    <div class="row" style="margin-bottom:12px;">
+      <span class="label">Mode</span>
+      <div class="seg" id="modeSeg"><button data-m="classic" class="on">Zen</button><button data-m="streak">Survie</button><button data-m="sprint">Sprint</button><button data-m="flash">Flash</button></div>
+    </div>
+    <div class="row hidden" id="streakRow" style="margin-bottom:12px;">
+      <span class="label">Temps par date (secondes)</span>
+      <div class="seg" id="limitSeg"><button data-s="3">3</button><button data-s="5">5</button><button data-s="10" class="on">10</button><button data-s="20">20</button></div>
+      <input type="number" id="limitIn" min="1" max="300" value="10" style="width:84px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font-size:16px;">
+    </div>
+    <p class="mhelp hidden" id="modeHelp"></p>
     <div class="row">
-      <span class="label">Nombre de dates</span>
+      <span class="label" id="countLbl">Nombre de dates</span>
       <div class="seg" id="countSeg">
         <button data-n="1">1</button><button data-n="3">3</button><button data-n="5">5</button><button data-n="20" class="on">20</button>
       </div>
@@ -132,7 +208,7 @@
         <button data-r="modern" class="on">1900 – 2100</button><button data-r="full">0001 – 3000</button>
       </div>
     </div>
-    <div class="row" style="margin-top:12px;">
+    <div class="row hidden" style="margin-top:12px;">
       <label class="chk" title="Comme la feuille « Test 2 » : chaque date s'affiche quelques secondes puis disparaît"><input type="checkbox" id="memMode"> Mode mémoire (date masquée après 4 s)</label>
     </div>
     <div class="row" style="margin-top:14px;">
@@ -143,6 +219,8 @@
   </div>
 
   <div class="card hidden" id="playCard">
+    <div class="row hidden" id="compInfo"></div>
+    <div class="bar hidden" id="bar"><i id="barFill"></i></div>
     <div class="list" id="list"></div>
     <div class="days" id="days"></div>
     <p class="hint">Clavier : 1 = lundi … 7 = dimanche. ↑/↓ pour changer de date. Clique sur une date pour corriger ta réponse.</p>
@@ -155,6 +233,7 @@
       <div class="stat"><div class="v" id="rTime">–</div><div class="k">Temps total</div></div>
       <div class="stat"><div class="v" id="rPer">–</div><div class="k">Temps / bonne réponse</div></div>
     </div>
+    <div class="gain" id="gain"></div>
     <div class="row" style="margin-top:14px;" id="saveRow">
       <input type="text" id="nameInput" placeholder="Nom" maxlength="20">
       <button class="btn btn-primary" id="saveBtn">Enregistrer le score</button>
@@ -263,6 +342,22 @@
       <div class="hint" id="thScore" style="display:block;"></div>
     </div>
   </div>
+
+  <div id="tabShop" class="hidden">
+    <div class="card">
+      <div class="row" style="justify-content:space-between;margin-bottom:8px;"><strong>Boutique</strong><span class="label" id="shopBal"></span></div>
+      <p class="mhelp">Chaque bonne réponse rapporte 1 point. Zen sans décor et la Théorie sont gratuits ; chaque mode et chaque décor coûte 50 points.</p>
+      <div id="shopList"></div>
+    </div>
+  </div>
+
+  <div id="tabTrophy" class="hidden">
+    <div class="card">
+      <div class="row" style="justify-content:space-between;margin-bottom:8px;"><strong>Salle des trophées</strong><span class="label" id="troCount"></span></div>
+      <div class="trophies" id="troGrid"></div>
+      <p class="mhelp" id="troProg" style="margin-top:12px;"></p>
+    </div>
+  </div>
 </main>
 
 <script>
@@ -295,8 +390,8 @@ function fmtDate(d){
   return p(d.getUTCDate())+"."+p(d.getUTCMonth()+1)+"."+String(d.getUTCFullYear()).padStart(4,"0");
 }
 function fmtTime(ms){
-  const s = ms/1000, m = Math.floor(s/60);
-  return m+":"+(s-m*60).toFixed(1).padStart(4,"0");
+  const t = Math.floor(ms/100), m = Math.floor(t/600);   // dixièmes de seconde (pas d'arrondi à 60.0)
+  return m+":"+((t%600)/10).toFixed(1).padStart(4,"0");
 }
 
 // Formule du fichier Excel (onglet « Test », G28) :
@@ -313,7 +408,8 @@ function buildDays(){
 }
 
 function render(){
-  $("list").classList.toggle("big", count===1);
+  $("list").classList.toggle("big", count===1 || isComp());
+  syncTheme();
   $("list").innerHTML = items.map((it,i)=>{
     const cls = ["item"];
     if(it.answer!=null) cls.push(it.answer===it.correct ? "ok" : "ko");
@@ -347,6 +443,11 @@ function scheduleMask(){
 }
 
 function start(){
+  $("stopBtn").textContent = !isComp() ? "Terminer" : "Abandonner";
+  $("compInfo").classList.toggle("hidden", !isComp());
+  $("bar").classList.toggle("hidden", !isComp());
+  $("timer").classList.remove("low");
+  if(isComp()){ startComp(); return; }
   items = Array.from({length:count}, () => { const d = randomDate(); return {date:d, correct:weekdayIdx(d), answer:null, masked:false}; });
   active = 0; running = true; lastResult = null;
   t0 = performance.now();
@@ -363,6 +464,8 @@ function start(){
 
 function answer(i){
   if(!running) return;
+  if(isComp()){ answerComp(i); return; }
+  if(items[active].first==null) items[active].first = i;   // seule la 1re réponse compte pour les points
   items[active].answer = i;
   if($("memMode").checked) items[active].masked = true;
   const next = items.findIndex((it,k)=>k>active && it.answer==null);
@@ -373,6 +476,8 @@ function answer(i){
 
 function finish(){
   if(!running) return;
+  if(isComp()){ endComp("quit"); return; }
+  document.querySelectorAll("#resultCard .k").forEach((e,i) => e.textContent = LABELS_DEFAULT[i]);
   running = false;
   tEnd = performance.now();
   clearInterval(tick); clearTimeout(memTimer);
@@ -384,13 +489,15 @@ function finish(){
   const rate = answered.length ? okN/answered.length : 0;
   const per = okN ? total/1000/okN : Infinity;
   const score = computeScore(rate, per);
-  lastResult = {score, rate, per, total, n:count, mem:$("memMode").checked, range, ok:okN, answered:answered.length};
+  lastResult = {score, rate, per, total, n:count, mem:$("memMode").checked, range, ok:okN, answered:answered.length, mode};
   $("rScore").textContent = score.toFixed(2);
   $("rRate").textContent = Math.round(rate*100)+" %";
   $("rTime").textContent = fmtTime(total);
   $("rPer").textContent = isFinite(per) ? per.toFixed(1)+" s" : "–";
   $("resultCard").classList.remove("hidden");
   $("saveRow").classList.toggle("hidden", okN===0);
+  const gain = items.filter(it => it.first!=null && it.first===it.correct).length;
+  addPoints(gain); showGain(gain); checkSpeedZen(per);
   $("saveBtn").disabled = false; $("saveBtn").textContent = "Enregistrer le score";
   $("stopBtn").classList.add("hidden");
   lockSettings(false);
@@ -402,6 +509,9 @@ function lockSettings(lock){
   $("countSeg").querySelectorAll("button").forEach(b=>b.disabled=lock);
   $("rangeSeg").querySelectorAll("button").forEach(b=>b.disabled=lock);
   $("memMode").disabled = lock;
+  $("modeSeg").querySelectorAll("button").forEach(b=>b.disabled=lock);
+  $("limitIn").disabled = lock;
+  $("limitSeg").querySelectorAll("button").forEach(b=>b.disabled=lock);
 }
 
 // ---- Meilleurs scores (stockés dans ce navigateur, un tableau par nombre de dates / mode) ----
@@ -413,9 +523,9 @@ function saveName(v){ try{ localStorage.setItem("dayguess.name", v); }catch(e){}
 
 function renderHs(){
   const mem = $("memMode").checked;
-  $("hsLabel").textContent = count+(count>1?" dates":" date")+" · "+RANGES[range].label+(mem?" · mode mémoire":"");
-  const list = loadHs(count, mem, range);
-  $("hsBody").innerHTML = list.length ? list.map((h,i)=>`<tr><td>${i+1}</td><td><strong>${h.score.toFixed(2)}</strong></td><td>${escHtml(h.name)}</td><td class="hide-sm">${h.date}</td><td>${Math.round(h.rate*100)} %</td><td>${h.per.toFixed(1)} s</td></tr>`).join("")
+  $("hsLabel").textContent = hsTitle()+" · "+RANGES[range].label;
+  const list = loadHs(hsId(), mem, range);
+  $("hsBody").innerHTML = list.length ? list.map((h,i)=>`<tr><td>${i+1}</td><td><strong>${fmtScore(h.score)}</strong></td><td>${escHtml(h.name)}</td><td class="hide-sm">${h.date}</td><td>${h.rate==null ? "–" : Math.round(h.rate*100)+" %"}</td><td>${h.per==null ? "–" : h.per.toFixed(1)+" s"}</td></tr>`).join("")
     : `<tr><td colspan="6" style="color:var(--soft)">Aucun score pour l'instant.</td></tr>`;
 }
 function escHtml(s){ return String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
@@ -428,6 +538,7 @@ $("saveBtn").onclick = () => {
   list.push({score:lastResult.score, name, date:new Date().toLocaleDateString("fr-CH"), rate:lastResult.rate, per:lastResult.per});
   list.sort((a,b)=>b.score-a.score);
   saveHs(lastResult.n, lastResult.mem, lastResult.range, list.slice(0,10));
+  countSaved(lastResult.mode);
   $("saveBtn").disabled = true; $("saveBtn").textContent = "Enregistré";
   renderHs();
 };
@@ -466,9 +577,10 @@ const DAYS_SUN0 = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","sam
 let tab = "game";
 function showTab(t){
   tab = t;
-  $("tabGame").classList.toggle("hidden", t!=="game");
-  $("tabTheory").classList.toggle("hidden", t!=="theory");
+  ["Game","Theory","Shop","Trophy"].forEach(k => $("tab"+k).classList.toggle("hidden", k.toLowerCase()!==t));
   document.querySelectorAll(".tab").forEach(b => b.classList.toggle("on", b.dataset.tab===t));
+  if(t==="shop") renderShop();
+  if(t==="trophy") renderTrophies();
   window.scrollTo(0,0);
 }
 function isLeap(y){ return y%4===0 && (y%100!==0 || y%400===0); }
@@ -529,8 +641,327 @@ function initTheory(){
   renderCalc(); qzNext();
 }
 
+
+
+
+// ---- Points, boutique, trophées ----
+const PRICE = 50;
+const NAMES = {classic:"Zen", streak:"Survie", sprint:"Sprint", flash:"Flash"};
+const SHOP = [
+  {id:"mode_streak", ico:"🔥", name:"Mode Survie", desc:"Une date à la fois, un chrono par date, jusqu'à la première erreur."},
+  {id:"mode_sprint", ico:"⏱️", name:"Mode Sprint", desc:"5 minutes pour trouver un maximum de dates, fautes permises."},
+  {id:"mode_flash",  ico:"⚡", name:"Mode Flash", desc:"La date disparaît après 4 s : écran blanc, puis tout noir."},
+  {id:"bg_classic",  ico:"🌸", name:"Décor Zen", desc:"Jardin japonais derrière le jeu (mode Zen)."},
+  {id:"bg_streak",   ico:"🌋", name:"Décor Survie", desc:"Volcan, flammes et braises (mode Survie)."},
+  {id:"bg_sprint",   ico:"⏲️", name:"Décor Sprint", desc:"Chronomètre géant (mode Sprint)."}
+];
+const TROPHIES = [
+  {id:"own_mode_streak", ico:"🔥", name:"Survivant", how:"Débloquer le mode Survie"},
+  {id:"own_mode_sprint", ico:"⏱️", name:"Sprinteur", how:"Débloquer le mode Sprint"},
+  {id:"own_mode_flash",  ico:"⚡", name:"Éclair", how:"Débloquer le mode Flash"},
+  {id:"own_bg_classic",  ico:"🌸", name:"Jardinier", how:"Débloquer le décor Zen"},
+  {id:"own_bg_streak",   ico:"🌋", name:"Volcanologue", how:"Débloquer le décor Survie"},
+  {id:"own_bg_sprint",   ico:"⏲️", name:"Maître du temps", how:"Débloquer le décor Sprint"},
+  {id:"t100",            ico:"💯", name:"100 %", how:"Remplir chaque tableau de scores (10 scores) : Zen et Flash (1/3/5/20 dates), Survie (3/5/10/20 s), Sprint, chacun pour les 2 périodes"},
+  {id:"speed_classic_1",  ico:"🏎️", name:"Speed Zen 1", how:"Zen, 1 date : juste, en 10 s ou moins"},
+  {id:"speed_classic_3",  ico:"🏎️", name:"Speed Zen 3", how:"Zen, 3 dates : 100 % de justes, 10 s ou moins par réponse en moyenne"},
+  {id:"speed_classic_5",  ico:"🏎️", name:"Speed Zen 5", how:"Zen, 5 dates : 100 % de justes, 10 s ou moins par réponse en moyenne"},
+  {id:"speed_classic_20", ico:"🏎️", name:"Speed Zen 20", how:"Zen, 20 dates : 100 % de justes, 10 s ou moins par réponse en moyenne"},
+  {id:"speed_streak",     ico:"🏎️", name:"Speed Survie", how:"Survie : au moins 5 bonnes réponses de suite, 10 s ou moins par réponse en moyenne"},
+  {id:"speed_sprint",     ico:"🏎️", name:"Speed Sprint", how:"Sprint : au moins 30 bonnes réponses en 5 minutes (6 par minute)"}
+];
+function loadProfile(){
+  const base = {points:0, owned:{}, trophies:{}, saved:{}};
+  try{ const p = JSON.parse(localStorage.getItem("dayguess.profile")); if(p && typeof p==="object") return Object.assign(base, p); }catch(e){}
+  return base;
+}
+let profile = loadProfile();
+function saveProfile(){ try{ localStorage.setItem("dayguess.profile", JSON.stringify(profile)); }catch(e){} }
+function modeOwned(m){ return m==="classic" || !!profile.owned["mode_"+m]; }
+function bgOwned(m){ return !!profile.owned["bg_"+m]; }
+function updatePts(){ $("pts").textContent = "⭐ "+profile.points+" pts"; }
+function addPoints(n){ if(!n) return; profile.points += n; saveProfile(); updatePts(); }
+function showGain(n){ $("gain").textContent = n ? "+"+n+" point"+(n>1?"s":"")+" ⭐" : ""; }
+let toastTimer = null;
+function toast(msg){
+  let el = $("toast");
+  if(!el){ el = document.createElement("div"); el.id = "toast"; el.className = "toast"; document.body.appendChild(el); }
+  el.textContent = msg; el.style.display = "block";
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { el.style.display = "none"; }, 3500);
+}
+function awardTrophy(id){
+  if(profile.trophies[id]) return;
+  const t = TROPHIES.find(x => x.id===id); if(!t) return;
+  profile.trophies[id] = new Date().toLocaleDateString("fr-CH");
+  saveProfile();
+  toast("🏆 Trophée débloqué : "+t.name);
+  renderTrophies();
+}
+function checkSpeedZen(per){   // Zen : 1/3/5/20 dates, toutes justes du premier coup, moyenne ≤ 10 s
+  if(mode!=="classic" || ![1,3,5,20].includes(count)) return;
+  const perfect = items.length===count && items.every(it => it.first!=null && it.first===it.correct);
+  if(perfect && per<=10) awardTrophy("speed_classic_"+count);
+}
+function checkSpeedComp(ok){
+  if(mode==="sprint" && ok>=30) awardTrophy("speed_sprint");
+  if(mode==="streak" && ok>=5 && comp.sumOk/ok/1000<=10) awardTrophy("speed_streak");
+}
+// Trophée 100 % : chaque tableau de scores ci-dessous doit contenir 10 scores.
+const REQ_COUNTS = [1,3,5,20], REQ_LIMITS = [3,5,10,20];
+function requiredTables(){
+  const T = {classic:[], streak:[], sprint:[], flash:[]};
+  for(const rg of ["modern","full"]){
+    REQ_COUNTS.forEach(n => { T.classic.push([n,false,rg]); T.flash.push([n,true,rg]); });
+    REQ_LIMITS.forEach(s => T.streak.push(["s"+s,false,rg]));
+    T.sprint.push(["m5",false,rg]);
+  }
+  return T;
+}
+function tablesProgress(){
+  const T = requiredTables(), out = {};
+  for(const m in T) out[m] = {done:T[m].filter(([n,mem,rg]) => loadHs(n,mem,rg).length>=10).length, total:T[m].length};
+  return out;
+}
+function countSaved(){
+  const p = tablesProgress();
+  if(Object.keys(p).every(m => p[m].done===p[m].total)) awardTrophy("t100");
+  renderTrophies();
+}
+function buy(id){
+  const it = SHOP.find(x => x.id===id);
+  if(!it || profile.owned[id] || profile.points < PRICE) return;
+  profile.points -= PRICE; profile.owned[id] = true;
+  saveProfile(); updatePts();
+  awardTrophy("own_"+id);
+  renderShop(); applyMode();
+}
+function lockedHint(m){ toast("🔒 Mode "+NAMES[m]+" verrouillé : "+PRICE+" points dans la boutique"); showTab("shop"); }
+function renderShop(){
+  $("shopBal").textContent = "Solde : ⭐ "+profile.points+" pts";
+  $("shopList").innerHTML = SHOP.map(it => {
+    const own = !!profile.owned[it.id];
+    const right = own ? `<span class="own">Débloqué ✓</span>`
+      : `<button class="btn btn-primary" data-id="${it.id}" ${profile.points<PRICE ? "disabled" : ""}>${PRICE} pts</button>`;
+    return `<div class="shop-item"><span class="ico">${it.ico}</span><div class="t"><b>${it.name}</b><small>${it.desc}</small></div>${right}</div>`;
+  }).join("");
+  $("shopList").querySelectorAll("button[data-id]").forEach(b => b.onclick = () => buy(b.dataset.id));
+}
+function renderTrophies(){
+  const got = TROPHIES.filter(t => profile.trophies[t.id]).length;
+  $("troCount").textContent = got+" / "+TROPHIES.length;
+  $("troGrid").innerHTML = TROPHIES.map(t => {
+    const d = profile.trophies[t.id];
+    return d ? `<div class="tro got"><div class="ico">${t.ico}</div><b>${t.name}</b><small>${t.how}<br>Obtenu le ${d}</small></div>`
+             : `<div class="tro lock"><div class="ico">🔒</div><b>${t.name}</b><small>${t.how}</small></div>`;
+  }).join("");
+  const pr = tablesProgress();
+  $("troProg").textContent = "Tableaux de scores complets (10 scores chacun) pour le 100 % : " + Object.keys(NAMES).map(k => NAMES[k]+" "+pr[k].done+"/"+pr[k].total).join(" · ");
+}
+
+// ---- Décors par mode ----
+function isComp(){ return mode==="streak" || mode==="sprint"; }   // modes avec une seule date à la fois et un chrono
+
+function sceneZen(){
+  let rake = "", ripples = "", petals = "";
+  for(let i=0;i<6;i++) rake += `<path d="M0 ${598+i*20} Q500 ${572+i*20} 1000 ${598+i*20}" stroke="#d3c29c" stroke-width="2" fill="none"/>`;
+  [70,105,140,175].forEach(r => ripples += `<ellipse cx="330" cy="648" rx="${r*1.9}" ry="${r*0.34}" fill="none" stroke="#cdbb92" stroke-width="2"/>`);
+  const bl = [[930,150,34],[890,185,28],[960,210,30],[850,160,24],[900,120,26],[830,355,30],[790,345,24],[870,365,26],[960,390,30],[930,420,24]];
+  const blossom = bl.map(([x,y,r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#f6b3c8" opacity=".9"/><circle cx="${x-r*.3}" cy="${y-r*.3}" r="${r*.55}" fill="#fbd3e0" opacity=".9"/>`).join("");
+  for(let i=0;i<9;i++) petals += `<ellipse class="petal" cx="${620+i*37}" cy="0" rx="6" ry="3.5" fill="#f8c6d6" style="animation-delay:${(i*1.7).toFixed(1)}s;animation-duration:${9+i%4*2}s"/>`;
+  return `<svg viewBox="0 0 1000 700" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+<defs><linearGradient id="zsk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bfe3f5"/><stop offset=".65" stop-color="#fff3e6"/></linearGradient></defs>
+<rect width="1000" height="700" fill="url(#zsk)"/>
+<circle cx="690" cy="160" r="60" fill="#ffb3a7" opacity=".85"/>
+<path d="M180 450 L470 190 Q500 170 530 190 L820 450Z" fill="#a9bfd6"/>
+<path d="M470 190 Q500 170 530 190 L560 222 L528 208 L500 232 L472 208 L440 222Z" fill="#fff"/>
+<ellipse cx="500" cy="445" rx="430" ry="28" fill="#fff" opacity=".55"/>
+<path d="M0 470 Q150 400 320 450 T640 440 T1000 450 L1000 700 L0 700Z" fill="#9cc08a"/>
+<path d="M0 520 Q200 470 400 510 T800 500 T1000 520 L1000 700 L0 700Z" fill="#7fae78"/>
+<g fill="#c0392b"><rect x="668" y="350" width="14" height="130"/><rect x="778" y="350" width="14" height="130"/><rect x="672" y="388" width="116" height="10"/><path d="M650 345 Q730 322 810 345 L802 364 L658 364Z" fill="#2b2b2b"/></g>
+<path d="M0 560 Q500 520 1000 560 L1000 700 L0 700Z" fill="#ecdfc2"/>
+${rake}${ripples}
+<ellipse cx="330" cy="648" rx="38" ry="24" fill="#6f7377"/><ellipse cx="366" cy="658" rx="22" ry="15" fill="#85898d"/><ellipse cx="298" cy="660" rx="16" ry="11" fill="#5d6165"/>
+<g fill="none" stroke="#5b3a29" stroke-linecap="round"><path d="M1000 700 Q930 520 960 380 Q985 260 920 160" stroke-width="18"/><path d="M955 400 Q880 340 800 350" stroke-width="9"/><path d="M930 220 Q850 200 790 150" stroke-width="8"/></g>
+${blossom}${petals}
+</svg>`;
+}
+
+function sceneFire(){
+  let flames = "", inner = "", embers = "";
+  for(let i=0;i<18;i++){
+    const x = -20+i*58, h = 90+((i*37)%70), w = 64;
+    flames += `<path class="flame" d="M${x} 700 Q${x+6} ${700-h*.5} ${x+w/2} ${700-h} Q${x+w-6} ${700-h*.5} ${x+w} 700Z" fill="url(#ffl)" style="animation-delay:${((i*0.23)%0.9).toFixed(2)}s"/>`;
+    inner += `<path class="flame" d="M${x+14} 700 Q${x+18} ${700-h*.35} ${x+w/2} ${700-h*.62} Q${x+w-18} ${700-h*.35} ${x+w-14} 700Z" fill="#ffd24a" opacity=".8" style="animation-delay:${((i*0.31)%0.9).toFixed(2)}s"/>`;
+  }
+  for(let i=0;i<26;i++){
+    const x = 40+((i*83)%920), y = 380+((i*47)%300), r = 1.5+(i%3);
+    embers += `<circle class="ember" cx="${x}" cy="${y}" r="${r}" fill="${i%2 ? "#ffb347" : "#ff5a1f"}" style="animation-delay:${((i*0.7)%7).toFixed(1)}s;animation-duration:${5+i%5}s"/>`;
+  }
+  return `<svg viewBox="0 0 1000 700" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="fsk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#12030a"/><stop offset=".55" stop-color="#5c0f0a"/><stop offset="1" stop-color="#ff6a00"/></linearGradient>
+<radialGradient id="fgl" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ffd24a" stop-opacity=".95"/><stop offset="1" stop-color="#ff4500" stop-opacity="0"/></radialGradient>
+<linearGradient id="ffl" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ffd24a"/><stop offset=".5" stop-color="#ff7a00"/><stop offset="1" stop-color="#d81e00" stop-opacity=".1"/></linearGradient>
+</defs>
+<rect width="1000" height="700" fill="url(#fsk)"/>
+<g fill="#2a0a06" opacity=".8"><circle cx="500" cy="150" r="90"/><circle cx="425" cy="100" r="70"/><circle cx="585" cy="90" r="80"/><circle cx="500" cy="40" r="70"/></g>
+<circle cx="500" cy="270" r="170" fill="url(#fgl)"/>
+<path d="M100 700 L400 285 Q430 258 462 264 L538 264 Q570 258 600 285 L900 700Z" fill="#1c0907"/>
+<path d="M468 264 L532 264 L548 335 L522 405 L562 485 L522 565 L566 700 L466 700 L500 565 L466 485 L496 405 L468 335Z" fill="#ff6a00" opacity=".92"/>
+<path d="M492 264 L520 264 L516 335 L504 405 L520 485 L498 565 L512 700 L490 700 L488 565 L500 485 L486 405 L496 335Z" fill="#ffd24a" opacity=".75"/>
+<ellipse cx="500" cy="264" rx="62" ry="14" fill="#ffd24a"/>
+${flames}${inner}${embers}
+</svg>`;
+}
+
+function sceneChrono(){
+  let ticks = "", nums = "", lines = "";
+  for(let i=0;i<60;i++){
+    const a = i*6*Math.PI/180, big = i%5===0, r1 = 215, r2 = r1-(big?22:10);
+    ticks += `<line x1="${500+r1*Math.sin(a)}" y1="${380-r1*Math.cos(a)}" x2="${500+r2*Math.sin(a)}" y2="${380-r2*Math.cos(a)}" stroke="#1f2a44" stroke-width="${big?5:2}"/>`;
+  }
+  for(let i=0;i<12;i++){
+    const a = i*30*Math.PI/180, n = i===0 ? 60 : i*5;
+    nums += `<text x="${500+168*Math.sin(a)}" y="${380-168*Math.cos(a)}" font-size="28" font-weight="700" fill="#1f2a44" text-anchor="middle" dominant-baseline="central">${n}</text>`;
+  }
+  for(let i=0;i<7;i++) lines += `<line x1="${20+(i*37)%90}" y1="${210+i*55}" x2="${190+(i*53)%110}" y2="${210+i*55}" stroke="#3b5bdb" stroke-width="4" stroke-linecap="round" opacity=".25"/>`;
+  return `<svg viewBox="0 0 1000 700" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+<defs><linearGradient id="csk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f3f7fb"/><stop offset="1" stop-color="#d6e3f2"/></linearGradient></defs>
+<rect width="1000" height="700" fill="url(#csk)"/>
+${lines}
+<rect x="480" y="70" width="40" height="30" rx="6" fill="#3b5bdb"/><rect x="490" y="98" width="20" height="30" fill="#3b5bdb"/>
+<rect x="582" y="130" width="34" height="24" rx="6" fill="#3b5bdb" transform="rotate(40 500 380)"/>
+<circle cx="500" cy="380" r="250" fill="#fff" opacity=".6" stroke="#3b5bdb" stroke-width="14"/>
+<circle cx="500" cy="380" r="228" fill="none" stroke="#9db4ff" stroke-width="3"/>
+<path d="M500 180 A200 200 0 0 1 690 318" fill="none" stroke="#e03131" stroke-width="12" stroke-linecap="round" opacity=".55"/>
+${ticks}${nums}
+<g class="hand"><line x1="500" y1="420" x2="500" y2="190" stroke="#e03131" stroke-width="5" stroke-linecap="round"/><circle cx="500" cy="380" r="12" fill="#e03131"/></g>
+</svg>`;
+}
+const SCENES = {classic:sceneZen, streak:sceneFire, sprint:sceneChrono};
+let sceneMode = null;
+function syncTheme(){
+  const bg = mode!=="flash" && bgOwned(mode);   // décor et thème visuel : seulement une fois achetés
+  document.body.dataset.mode = (mode==="flash" || bg) ? mode : "plain";
+  const key = bg ? mode : "";
+  if(sceneMode !== key){ sceneMode = key; const f = SCENES[key]; $("bgScene").innerHTML = f ? f() : ""; }
+  const fl = mode==="flash", black = fl && running && items[active] && items[active].masked;
+  document.body.classList.toggle("fl-white", fl);
+  document.body.classList.toggle("fl-run", fl && running);
+  document.body.classList.toggle("fl-black", !!black);
+}
+
+// ---- Modes compétition : « Série » (temps par date) et « 5 minutes » ----
+let mode = "classic", comp = null;
+const SPRINT_MS = 5*60*1000;
+const LABELS_DEFAULT = Array.from(document.querySelectorAll("#resultCard .k"), e => e.textContent);
+const MODE_HELP = {
+  streak: "Survie : tu as le temps choisi pour trouver une date, puis la suivante… La partie s'arrête à la première erreur ou quand le temps est écoulé. Pas de pause.",
+  sprint: "Sprint : 5 minutes pour trouver un maximum de dates. Les fautes sont permises mais font baisser le taux de réussite. Score = bonnes réponses × taux de réussite. Pas de pause.",
+  flash: "Flash : la date s'affiche 4 secondes sur fond blanc, puis l'écran passe au noir : retrouve le jour de mémoire."
+};
+function limitSec(){ return Math.max(1, Math.min(300, Math.round(+$("limitIn").value) || 10)); }
+function hsId(){ return mode==="streak" ? "s"+limitSec() : mode==="sprint" ? "m5" : count; }
+function hsTitle(){ return mode==="streak" ? "Survie · "+limitSec()+" s par date" : mode==="sprint" ? "Sprint · 5 minutes" : (mode==="flash" ? "Flash · " : "Zen · ")+count+(count>1?" dates":" date"); }
+function fmtScore(s){ return mode==="streak" ? String(s) : mode==="sprint" ? s.toFixed(1) : s.toFixed(2); }
+function newItem(){ const d = randomDate(); return {date:d, correct:weekdayIdx(d), answer:null, masked:false}; }
+
+function applyMode(){
+  $("modeSeg").querySelectorAll("button").forEach(b => {
+    b.classList.toggle("on", b.dataset.m===mode);
+    b.textContent = (modeOwned(b.dataset.m) ? "" : "🔒 ") + NAMES[b.dataset.m];
+  });
+  $("streakRow").classList.toggle("hidden", mode!=="streak");
+  $("countLbl").classList.toggle("hidden", isComp());
+  $("countSeg").classList.toggle("hidden", isComp());
+  $("modeHelp").classList.toggle("hidden", mode==="classic");
+  $("modeHelp").textContent = MODE_HELP[mode] || "";
+  $("memMode").checked = mode==="flash";   // Flash = ancien « mode mémoire »
+  syncTheme();
+  renderHs();
+}
+
+function startComp(){
+  const now = performance.now();
+  comp = {ok:0, wrong:0, tStart:now, last:"", sumOk:0, dateStart:now, span: mode==="streak" ? limitSec()*1000 : SPRINT_MS};
+  comp.deadline = now + comp.span;
+  items = [newItem()]; active = 0; running = true; lastResult = null;
+  clearInterval(tick); tick = setInterval(compTick, 100);
+  $("playCard").classList.remove("hidden");
+  $("resultCard").classList.add("hidden");
+  $("startBtn").textContent = "Recommencer";
+  $("stopBtn").classList.remove("hidden");
+  lockSettings(true);
+  scheduleMask();
+  render(); renderCompInfo(); compTick();
+}
+function compTick(){
+  if(!running || !isComp()) return;
+  const left = comp.deadline - performance.now();
+  if(left <= 0){ endComp("time"); return; }
+  $("timer").textContent = fmtTime(left);
+  $("timer").classList.toggle("low", left < 3000);
+  $("barFill").style.width = (100*left/comp.span)+"%";
+}
+function renderCompInfo(){
+  $("compInfo").innerHTML = (mode==="streak" ? `Série : <b>${comp.ok}</b>` : `✓ <b>${comp.ok}</b> · ✗ <b>${comp.wrong}</b>`)
+    + (comp.last ? ` <span class="label">${comp.last}</span>` : "");
+}
+function answerComp(i){
+  const now = performance.now();
+  if(now >= comp.deadline){ endComp("time"); return; }   // réponse trop tardive
+  const it = items[0], good = i===it.correct;
+  if(mode==="streak"){
+    if(!good){ it.answer = i; endComp("wrong"); return; }
+    comp.ok++; addPoints(1); comp.sumOk += now - comp.dateStart; comp.dateStart = now; comp.deadline = now + comp.span;
+  } else {
+    if(good){ comp.ok++; addPoints(1); comp.last = "✓"; }
+    else { comp.wrong++; comp.last = `✗ ${fmtDate(it.date)} = ${DAYS[it.correct]}`; }
+  }
+  items = [newItem()]; active = 0;
+  scheduleMask(); render(); renderCompInfo(); compTick();
+}
+function endComp(reason){
+  if(!running) return;
+  running = false;
+  const now = performance.now();
+  clearInterval(tick); clearTimeout(memTimer);
+  const total = Math.min(now, comp.deadline) - comp.tStart;
+  const ok = comp.ok, wrong = mode==="sprint" ? comp.wrong : (reason==="wrong" ? 1 : 0);
+  const answered = ok+wrong, rate = answered ? ok/answered : 0;
+  const per = ok ? total/1000/ok : null;
+  const score = mode==="streak" ? ok : ok*rate;
+  lastResult = {score, rate: mode==="streak" ? null : rate, per, total, n:hsId(), mem:$("memMode").checked, range, ok, answered, mode};
+  const it = items[0];
+  comp.last = reason==="time" ? "Temps écoulé" + (mode==="streak" ? ` – c'était ${DAYS[it.correct]}` : "")
+            : reason==="wrong" ? `Erreur – c'était ${DAYS[it.correct]}` : "Abandon";
+  renderCompInfo();
+  $("timer").textContent = fmtTime(total);
+  $("timer").classList.remove("low");
+  const K = document.querySelectorAll("#resultCard .k"), V = [$("rScore"),$("rRate"),$("rTime"),$("rPer")];
+  const labels = mode==="streak" ? ["Dates d'affilée","Temps par date","Temps total","Temps moyen / date"]
+                                 : ["Score (bonnes × réussite)","Taux de réussite","Bonnes / fausses","Temps / bonne réponse"];
+  const vals = mode==="streak" ? [ok, limitSec()+" s", fmtTime(total), per ? per.toFixed(1)+" s" : "–"]
+                               : [score.toFixed(1), Math.round(rate*100)+" %", ok+" / "+wrong, per ? per.toFixed(1)+" s" : "–"];
+  labels.forEach((l,i) => { K[i].textContent = l; V[i].textContent = vals[i]; });
+  $("resultCard").classList.remove("hidden");
+  $("saveRow").classList.toggle("hidden", ok===0);
+  showGain(ok); checkSpeedComp(ok);
+  $("saveBtn").disabled = false; $("saveBtn").textContent = "Enregistrer le score";
+  $("stopBtn").classList.add("hidden");
+  lockSettings(false);
+  render();
+  $("nameInput").value = loadName();
+}
+$("modeSeg").querySelectorAll("button").forEach(b => b.onclick = () => { if(!modeOwned(b.dataset.m)){ lockedHint(b.dataset.m); return; } mode = b.dataset.m; applyMode(); });
+function syncLimitSeg(){ const v = limitSec(); $("limitSeg").querySelectorAll("button").forEach(b => b.classList.toggle("on", +b.dataset.s===v)); }
+$("limitIn").oninput = () => { syncLimitSeg(); renderHs(); };
+$("limitSeg").querySelectorAll("button").forEach(b => b.onclick = () => { $("limitIn").value = b.dataset.s; syncLimitSeg(); renderHs(); });
+
 buildDays();
 initTheory();
+updatePts();
+applyMode();
 renderHs();
 render();
 

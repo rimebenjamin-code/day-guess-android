@@ -1,0 +1,1611 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Day Guess</title>
+<meta name="theme-color" content="#3b5bdb">
+<meta name="description" content="Trouve le jour de la semaine de dates tirées au hasard.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Day Guess">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<style>
+  :root{
+    --bg:#f6f5f2; --card:#ffffff; --ink:#1f2328; --soft:#6b7078; --line:#e2e0db;
+    --accent:#3b5bdb; --accent-tx:#ffffff; --ok:#2f9e44; --ok-bg:#e6f4ea; --ko:#e03131; --ko-bg:#fdecec;
+    --active:#edf1ff;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#16181c; --card:#1f2228; --ink:#e8e9eb; --soft:#9aa0a8; --line:#33373f;
+      --accent:#748ffc; --accent-tx:#10131a; --ok:#69db7c; --ok-bg:#1d3324; --ko:#ff8787; --ko-bg:#3a1f22;
+      --active:#262c3d;
+    }
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;}
+  main{max-width:720px;margin:0 auto;padding:calc(28px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) calc(60px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));}
+  button,.item,label.chk{touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;}
+  h1{font-size:26px;margin:0 0 4px;letter-spacing:-.01em;}
+  .sub{color:var(--soft);font-size:14px;margin:0 0 22px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px;}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+  .label{font-size:13px;color:var(--soft);margin-right:4px;}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;}
+  .seg button{border:0;background:transparent;color:var(--ink);padding:7px 16px;font-size:14px;cursor:pointer;font-variant-numeric:tabular-nums;}
+  .seg button.on{background:var(--accent);color:var(--accent-tx);font-weight:600;}
+  .seg button:disabled{cursor:default;opacity:.6;}
+  label.chk{display:inline-flex;gap:6px;align-items:center;font-size:14px;cursor:pointer;}
+  .btn{border:0;border-radius:8px;padding:10px 18px;font-size:15px;font-weight:600;cursor:pointer;}
+  .btn-primary{background:var(--accent);color:var(--accent-tx);}
+  .btn-ghost{background:transparent;color:var(--soft);border:1px solid var(--line);}
+  .timer{margin-left:auto;font-size:28px;font-weight:700;font-variant-numeric:tabular-nums;}
+  .list{display:flex;flex-direction:column;gap:6px;}
+  .item{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;cursor:pointer;}
+  .item.active{background:var(--active);border-color:var(--accent);}
+  .item.ok{background:var(--ok-bg);border-color:var(--ok);}
+  .item.ko{background:var(--ko-bg);border-color:var(--ko);}
+  .item .n{width:26px;color:var(--soft);font-size:13px;font-variant-numeric:tabular-nums;}
+  .item .d{font-size:20px;font-weight:600;font-variant-numeric:tabular-nums;min-width:130px;}
+  .item .a{margin-left:auto;font-size:14px;color:var(--soft);text-align:right;}
+  .item.ok .a{color:var(--ok);} .item.ko .a{color:var(--ko);}
+  .big .item .d{font-size:34px;}
+  .days{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:14px;position:sticky;bottom:0;background:var(--card);padding:8px 0 calc(4px + env(safe-area-inset-bottom));}
+  .days .short{display:none;}
+  .days button:active:not(:disabled){background:var(--active);}
+  .days button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:12px 0;font-size:14px;cursor:pointer;}
+  .days button:hover:not(:disabled){border-color:var(--accent);}
+  .days button:disabled{opacity:.45;cursor:default;}
+  .days small{display:block;color:var(--soft);font-size:11px;margin-top:2px;}
+  .result{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+  .stat{border:1px solid var(--line);border-radius:8px;padding:10px;}
+  .stat .v{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;}
+  .stat .k{font-size:12px;color:var(--soft);}
+  table{width:100%;border-collapse:collapse;font-size:14px;}
+  th,td{text-align:left;padding:6px 4px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums;}
+  th{font-size:12px;color:var(--soft);font-weight:600;}
+  .hint{font-size:12px;color:var(--soft);margin-top:10px;}
+  .hidden{display:none;}
+  input[type=text]{padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font-size:16px;}
+  @media (hover:none){ .hint{display:none;} }
+  @media (max-width:520px){
+    h1{font-size:22px;}
+    .sub{margin-bottom:14px;}
+    .card{padding:14px;}
+    .seg button{padding:9px 14px;}
+    .days{gap:4px;}
+    .days button{font-size:15px;font-weight:600;padding:16px 0;}
+    .days .long, .days small{display:none;}
+    .days .short{display:inline;}
+    .result{grid-template-columns:repeat(2,1fr);}
+    .item{padding:9px 10px;}
+    .item .d{font-size:19px;min-width:0;}
+    .timer{font-size:24px;}
+    .hide-sm{display:none;}
+  }
+
+  .tabs{display:flex;gap:6px;margin-bottom:16px;}
+  .tab{flex:1;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:10px 0;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;touch-action:manipulation;}
+  .tab.on{background:var(--accent);color:var(--accent-tx);border-color:var(--accent);}
+  .th h2{font-size:17px;margin:0 0 8px;}
+  .th p{margin:6px 0;line-height:1.5;font-size:15px;}
+  .th .step{display:inline-block;width:24px;height:24px;line-height:24px;text-align:center;border-radius:50%;background:var(--accent);color:var(--accent-tx);font-size:13px;font-weight:700;margin-right:8px;}
+  .formula{background:var(--active);border:1px solid var(--accent);border-radius:8px;padding:12px;font-size:16px;font-weight:600;text-align:center;margin:10px 0;}
+  .chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:6px;margin:10px 0;}
+  .chip{border:1px solid var(--line);border-radius:8px;padding:6px;text-align:center;font-size:12px;color:var(--soft);}
+  .chip b{display:block;font-size:22px;color:var(--ink);font-variant-numeric:tabular-nums;}
+  .mnemo{font-size:28px;font-weight:700;letter-spacing:.12em;text-align:center;font-variant-numeric:tabular-nums;margin:8px 0;}
+  .th ul,.th ol{margin:6px 0;padding-left:22px;line-height:1.6;font-size:15px;}
+  .calc input[type=number]{width:72px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font-size:16px;}
+  .calc-out{margin-top:12px;font-size:15px;line-height:1.7;}
+  .calc-out .res{font-size:20px;font-weight:700;color:var(--accent);}
+  .qbtns{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:12px;}
+  .qbtns button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:14px 0;font-size:18px;font-weight:600;cursor:pointer;touch-action:manipulation;}
+  .qbtns button:active{background:var(--active);}
+  .qq{font-size:18px;margin:12px 0 4px;}
+  .qfb{min-height:22px;font-size:14px;color:var(--soft);}
+
+  .mhelp{font-size:13px;color:var(--soft);margin:0 0 12px;line-height:1.4;}
+  .timer.low{color:var(--ko);}
+  .bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-bottom:10px;}
+  .bar i{display:block;height:100%;width:100%;background:var(--accent);}
+  #compInfo{margin-bottom:10px;font-size:16px;}
+
+  /* ---- Thèmes par mode : décor derrière les cartes, texte lisible grâce aux cartes "verre" ---- */
+  :root{ --glass:rgba(255,255,255,.88); }
+  @media (prefers-color-scheme: dark){ :root{ --glass:rgba(31,34,40,.88); } }
+  #bgScene{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden;}
+  #bgScene svg{width:100%;height:100%;display:block;}
+  body{transition:background .2s;}
+  .card{transition:background .2s;}
+  body[data-bg] .card{background:var(--glass);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);}
+  body[data-bg] .head{background:var(--glass);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin-bottom:16px;-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);}
+  body[data-bg] .head .sub{margin:0;}
+  body[data-bg] .head h1{margin-bottom:2px;}
+  @media (prefers-color-scheme: dark){
+    body[data-tone="light"] #bgScene{filter:brightness(.55);}
+  }
+  /* Survie : toujours sombre */
+  body[data-tone="dark"]{--bg:#1a0603;--card:rgba(32,10,6,.92);--glass:rgba(32,10,6,.88);--ink:#ffeede;--soft:#e7b79a;--line:#8a3213;--accent:#ff7a1a;--accent-tx:#1b0600;--active:#4a1a0b;--ok:#7be28f;--ok-bg:#183a20;--ko:#ff8a7a;--ko-bg:#4a1512;}
+  /* Flash : tout blanc, puis tout noir (seuls les boutons des jours restent visibles) */
+  body.fl-white{--bg:#fff;--card:#fff;--ink:#111;--soft:#555;--line:#ddd;--accent:#111;--accent-tx:#fff;--active:#eee;--ok:#2f9e44;--ok-bg:#e6f4ea;--ko:#e03131;--ko-bg:#fdecec;}
+  body.fl-black{--bg:#000;--card:#000;--ink:#fff;--soft:#888;--line:#333;--active:#111;}
+  body.fl-black .head, body.fl-black .tabs, body.fl-black #tabGame > .card:not(#playCard), body.fl-black #list, body.fl-black #compInfo, body.fl-black #playCard .hint{visibility:hidden;}
+  body.fl-black .days button{background:#fff;color:#000;border-color:#fff;}
+  body.fl-black .days small{color:#555;}
+  body.fl-black .card{border-color:#000;box-shadow:none;}
+  body.fl-run .item:not(.active){display:none;}
+  /* Animations du décor */
+  @keyframes drift{0%{transform:translate(0,-20px) rotate(0);opacity:0}10%{opacity:.9}100%{transform:translate(-140px,780px) rotate(360deg);opacity:0}}
+  @keyframes rise{0%{transform:translateY(0);opacity:0}15%{opacity:1}100%{transform:translateY(-420px);opacity:0}}
+  @keyframes flick{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.2)}}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .petal{animation:drift linear infinite;}
+  .ember{animation:rise linear infinite;}
+  .flame{transform-box:fill-box;transform-origin:50% 100%;animation:flick .9s ease-in-out infinite;}
+  .hand{transform-origin:500px 380px;animation:spin 60s linear infinite;}
+  @media (prefers-reduced-motion: reduce){ #bgScene *{animation:none !important;} }
+
+  /* ---- Points, boutique, trophées ---- */
+  .pts{font-weight:700;font-size:15px;background:var(--active);border:1px solid var(--accent);border-radius:999px;padding:4px 12px;white-space:nowrap;cursor:pointer;}
+  .gain{margin-top:12px;font-weight:700;color:var(--ok);}
+  .shop-item{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;}
+  .shop-item .ico{font-size:28px;}
+  .shop-item .t{flex:1;min-width:0;}
+  .shop-item .t b{display:block;}
+  .shop-item .t small{color:var(--soft);font-size:13px;line-height:1.35;display:block;}
+  .shop-item .btn{padding:8px 14px;font-size:14px;white-space:nowrap;}
+  .shop-item .btn:disabled{opacity:.45;cursor:default;}
+  .shop-item .own{color:var(--ok);font-weight:700;white-space:nowrap;}
+  .trophies{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;}
+  .tro{border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center;}
+  .tro .ico{font-size:38px;}
+  .tro b{display:block;margin-top:4px;}
+  .tro small{display:block;color:var(--soft);font-size:12px;margin-top:4px;line-height:1.35;}
+  .tro.got{border-color:var(--accent);background:var(--active);}
+  .tro.lock{opacity:.55;filter:grayscale(1);}
+  .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-size:14px;font-weight:600;z-index:50;max-width:90vw;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,.35);}
+
+  /* ---- Flamme, anti-spam, trophée plein écran, yin-yang ---- */
+  .blockbar{position:sticky;top:0;z-index:30;background:#b42318;color:#fff;padding:10px 14px;border-radius:10px;margin-bottom:12px;font-weight:700;text-align:center;}
+  .tro-over{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;text-align:center;color:#fff;padding:24px;}
+  .tro-over.hidden{display:none;}
+  .tro-box{animation:pop .5s ease-out;}
+  .tro-ico{font-size:min(38vw,220px);line-height:1.1;}
+  .tro-t{font-size:18px;letter-spacing:.14em;text-transform:uppercase;opacity:.8;margin-top:8px;}
+  .tro-over b{display:block;font-size:34px;margin-top:6px;}
+  .tro-over small{display:block;font-size:16px;opacity:.8;margin-top:8px;}
+  @keyframes pop{0%{transform:scale(.3);opacity:0}70%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
+  .yy{transform-origin:500px 350px;animation:spin 120s linear infinite;}
+
+  /* ---- Décors choisis, tons sombres, boutique par sections, Crésus ---- */
+  body[data-tone="night"]{--bg:#060d1a;--card:rgba(10,20,40,.92);--glass:rgba(10,20,40,.88);--ink:#e8f1ff;--soft:#9db4d4;--line:#27406a;--accent:#7aa2ff;--accent-tx:#071026;--active:#16294d;--ok:#7be28f;--ok-bg:#12331f;--ko:#ff8a8a;--ko-bg:#3b1a1f;}
+  .bgsel{padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font-size:15px;max-width:100%;}
+  .shop-h{margin:16px 0 6px;font-size:13px;color:var(--soft);text-transform:uppercase;letter-spacing:.07em;}
+  .tro .btn{padding:6px 10px;font-size:13px;}
+  .tro .btn:disabled{opacity:.45;cursor:default;}
+  .tro.gold{border-color:#d4af37;background:linear-gradient(135deg,rgba(212,175,55,.28),rgba(255,236,150,.14));}
+  .tro.silver{border-color:#a9a9a9;background:linear-gradient(135deg,rgba(170,170,170,.28),rgba(240,240,240,.14));}
+</style>
+</head>
+<body>
+<div id="bgScene" aria-hidden="true"></div>
+<main>
+  <div class="head">
+  <div class="row" style="justify-content:space-between;flex-wrap:nowrap;"><h1>Day Guess</h1><span style="display:flex;gap:6px;align-items:center;"><select id="langSel" class="bgsel" style="padding:4px 6px;font-size:13px;" aria-label="Langue / Sprache / Language"><option value="fr">FR</option><option value="de">DE</option><option value="en">EN</option></select><span class="pts" id="flameChip" onclick="showTab('shop')"></span><span class="pts" id="pts" onclick="showTab('shop')" title="Boutique"></span></span></div>
+  <p class="sub">Trouve le jour de la semaine de dates tirées au hasard.</p>
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button class="tab on" data-tab="game" role="tab">Jeu</button>
+    <button class="tab" data-tab="theory" role="tab">Théorie</button>
+    <button class="tab" data-tab="shop" role="tab">Boutique</button>
+    <button class="tab" data-tab="trophy" role="tab">Trophées</button>
+  </div>
+  <div id="tabGame">
+  <div class="blockbar hidden" id="blockBar"></div>
+
+  <div class="card">
+    <div class="row" style="margin-bottom:12px;">
+      <span class="label">Mode</span>
+      <div class="seg" id="modeSeg"><button data-m="classic" class="on">Zen</button><button data-m="streak">Survie</button><button data-m="sprint">Sprint</button><button data-m="flash">Flash</button></div>
+    </div>
+    <div class="row hidden" id="streakRow" style="margin-bottom:12px;">
+      <span class="label">Temps par date (secondes)</span>
+      <div class="seg" id="limitSeg"><button data-s="5">5</button><button data-s="10" class="on">10</button><button data-s="20">20</button></div>
+      <input type="number" id="limitIn" min="5" max="300" value="10" style="width:84px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font-size:16px;">
+    </div>
+    <p class="mhelp hidden" id="modeHelp"></p>
+    <p class="mhelp" id="costInfo"></p>
+    <div class="row hidden" id="bgRow" style="margin-bottom:12px;"><span class="label">Décor</span><select id="bgSel" class="bgsel"></select></div>
+    <div class="row">
+      <span class="label" id="countLbl">Nombre de dates</span>
+      <div class="seg" id="countSeg">
+        <button data-n="1">1</button><button data-n="3">3</button><button data-n="5">5</button><button data-n="20" class="on">20</button>
+      </div>
+      <span class="label" style="margin-left:8px;">Période</span>
+      <div class="seg" id="rangeSeg">
+        <button data-r="modern" class="on">1900 – 2100</button><button data-r="full">0001 – 3000</button>
+      </div>
+    </div>
+    <div class="row hidden" style="margin-top:12px;">
+      <label class="chk" title="Comme la feuille « Test 2 » : chaque date s'affiche quelques secondes puis disparaît"><input type="checkbox" id="memMode"> Mode mémoire (date masquée après 4 s)</label>
+    </div>
+    <div class="row" style="margin-top:14px;">
+      <button class="btn btn-primary" id="startBtn">Démarrer</button>
+      <button class="btn btn-ghost hidden" id="stopBtn">Terminer</button>
+      <span class="timer" id="timer">0:00.0</span>
+    </div>
+  </div>
+
+  <div class="card hidden" id="playCard">
+    <div class="row hidden" id="compInfo"></div>
+    <div class="bar hidden" id="bar"><i id="barFill"></i></div>
+    <div class="list" id="list"></div>
+    <div class="days" id="days"></div>
+    <p class="hint">Clavier : 1 = lundi … 7 = dimanche. ↑/↓ pour changer de date. Une réponse donnée ne peut plus être modifiée.</p>
+  </div>
+
+  <div class="card hidden" id="resultCard">
+    <div class="result">
+      <div class="stat"><div class="v" id="rScore">–</div><div class="k">Score (0 à 20)</div></div>
+      <div class="stat"><div class="v" id="rRate">–</div><div class="k">Taux de réussite</div></div>
+      <div class="stat"><div class="v" id="rTime">–</div><div class="k">Temps total</div></div>
+      <div class="stat"><div class="v" id="rPer">–</div><div class="k">Temps / bonne réponse</div></div>
+    </div>
+    <div class="gain" id="gain"></div>
+    <div class="row" style="margin-top:14px;" id="saveRow">
+      <input type="text" id="nameInput" placeholder="Nom" maxlength="20">
+      <button class="btn btn-primary" id="saveBtn">Enregistrer le score</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="row" style="margin-bottom:8px;">
+      <strong>Meilleurs scores</strong>
+      <span class="label" id="hsLabel" style="margin-left:auto;"></span>
+    </div>
+    <table>
+      <thead><tr><th>#</th><th>Score</th><th>Nom</th><th class="hide-sm">Date</th><th>Réussite</th><th>Temps / rép.</th></tr></thead>
+      <tbody id="hsBody"></tbody>
+    </table>
+  </div>
+  </div>
+
+  <div id="tabTheory" class="th hidden">
+    <div class="card">
+      <h2>La méthode en bref</h2>
+      <p>Tout se calcule <b>modulo 7</b> : on ne garde que le reste de la division par 7. Le résultat donne le jour de la semaine :</p>
+      <div class="chips" id="thDays"></div>
+      <p>Dans le jeu, dimanche est le bouton 7 ; ici il vaut 0 (7 mod 7 = 0).</p>
+      <div class="formula">jour = ( J + M + A + S − B ) mod 7</div>
+      <ul>
+        <li><b>J</b> : le quantième (1 à 31)</li>
+        <li><b>M</b> : le code du mois</li>
+        <li><b>A</b> : le code de l'année</li>
+        <li><b>S</b> : le code du siècle</li>
+        <li><b>B</b> : 1 si l'année est bissextile <i>et</i> que le mois est janvier ou février, sinon 0</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2><span class="step">1</span>Le modulo 7</h2>
+      <p>Retire des multiples de 7 jusqu'à obtenir un nombre de 0 à 6. Astuce : 7, 14, 21, 28 ne comptent pas.</p>
+      <ul>
+        <li>29 → 29 − 28 = <b>1</b></li>
+        <li>32 → 32 − 28 = <b>4</b></li>
+        <li>68 → 68 − 63 = <b>5</b></li>
+      </ul>
+      <p>Tu peux réduire à chaque étape pour garder de petits nombres : la réponse reste la même.</p>
+    </div>
+
+    <div class="card">
+      <h2><span class="step">2</span>Le code du mois</h2>
+      <div class="mnemo">033 614 625 035</div>
+      <p>À retenir par groupes de trois mois :</p>
+      <div class="chips" id="thMonths"></div>
+      <p>Repères : janvier = octobre = 0 · février = mars = novembre = 3 · avril = juillet = 6 · septembre = décembre = 5.</p>
+    </div>
+
+    <div class="card">
+      <h2><span class="step">3</span>Le code du siècle</h2>
+      <p>Il suit un cycle de 4 siècles (400 ans), puis tout recommence :</p>
+      <div class="chips" id="thCent"></div>
+      <p>Pour les années 1900 à 1999 → <b>0</b>, 2000 à 2099 → <b>6</b>, puis on descend de 2 à chaque siècle : 4, 2, 0, 6, 4, 2, 0, 6…</p>
+    </div>
+
+    <div class="card">
+      <h2><span class="step">4</span>Le code de l'année et les bissextiles</h2>
+      <p>Prends les <b>deux derniers chiffres</b> de l'année (yy) :</p>
+      <div class="formula">A = ( yy + ⌊yy ÷ 4⌋ ) mod 7</div>
+      <p>⌊yy ÷ 4⌋ = combien de fois 4 entre dans yy (on ignore le reste). Exemple 26 : 26 + 6 = 32 → <b>4</b>.</p>
+      <p><b>Année bissextile</b> : modulo 4 = 0 (donc divisible par 4). Exception pour les années de siècle : 1900 et 2100 ne le sont pas, 2000 l'est (divisible par 400).</p>
+      <p>Si l'année est bissextile et que la date est en <b>janvier ou février</b>, retranche 1 au total (B = 1). À partir de mars, rien à corriger.</p>
+    </div>
+
+    <div class="card">
+      <h2><span class="step">5</span>Assembler : deux exemples</h2>
+      <p><b>05.11.2026</b></p>
+      <ul>
+        <li>J = 5 · M (novembre) = 3 · S (2000s) = 6</li>
+        <li>A : 26 + 6 = 32 → 4</li>
+        <li>Total : 5 + 3 + 6 + 4 = 18 → 18 mod 7 = <b>4 = jeudi</b></li>
+      </ul>
+      <p><b>29.02.2024</b> (année bissextile, février)</p>
+      <ul>
+        <li>J = 29 → 1 · M (février) = 3 · S = 6</li>
+        <li>A : 24 + 6 = 30 → 2</li>
+        <li>B = 1 (bissextile, février)</li>
+        <li>Total : 1 + 3 + 6 + 2 − 1 = 11 → 11 mod 7 = <b>4 = jeudi</b></li>
+      </ul>
+      <p>La méthode fonctionne de l'an 1 à l'an 3000 (calendrier grégorien étendu vers le passé, comme dans le jeu).</p>
+    </div>
+
+    <div class="card calc">
+      <h2>Calculateur pas à pas</h2>
+      <div class="row">
+        <input type="number" id="thD" min="1" max="31" placeholder="jj" aria-label="jour">
+        <input type="number" id="thM" min="1" max="12" placeholder="mm" aria-label="mois">
+        <input type="number" id="thY" min="1" max="3000" placeholder="aaaa" style="width:90px;" aria-label="année">
+      </div>
+      <div class="calc-out" id="thOut"></div>
+    </div>
+
+    <div class="card">
+      <h2>Exerce-toi</h2>
+      <div class="seg" id="thKind">
+        <button data-k="month" class="on">Mois</button><button data-k="century">Siècle</button><button data-k="year">Année</button>
+      </div>
+      <div class="qq" id="thQ"></div>
+      <div class="qbtns" id="thBtns"></div>
+      <div class="qfb" id="thFb"></div>
+      <div class="hint" id="thScore" style="display:block;"></div>
+    </div>
+  </div>
+
+  <div id="tabShop" class="hidden">
+    <div class="card">
+      <div class="row" style="justify-content:space-between;margin-bottom:8px;"><strong>Boutique</strong><span class="label" id="shopBal"></span></div>
+      <p class="mhelp">Chaque bonne réponse rapporte 1 point. Zen sans décor et la Théorie sont gratuits ; chaque mode coûte 500 points et chaque décor 100 points.</p>
+      <div id="flameBox"></div>
+      <div id="shopList"></div>
+      <h3 class="shop-h">Code promo</h3>
+      <div class="shop-item"><span class="ico">🎟️</span><div class="t"><b>Entrer un code</b><small>Entre un code pour recevoir des pièces (points).</small><div class="row" style="margin-top:8px;"><input type="text" id="codeIn" placeholder="Code" maxlength="30" autocomplete="off" autocapitalize="off" style="width:140px;"><button class="btn btn-primary" id="codeBtn" style="padding:8px 14px;font-size:14px;">Valider</button></div></div></div>
+    </div>
+  </div>
+
+  <div id="tabTrophy" class="hidden">
+    <div class="card">
+      <div class="row" style="justify-content:space-between;margin-bottom:8px;"><strong>Salle des trophées</strong><span class="label" id="troCount"></span></div>
+      <div class="trophies" id="troGrid"></div>
+      <p class="mhelp" id="troProg" style="margin-top:12px;"></p>
+    </div>
+  </div>
+</main>
+<div id="hintOverlay" class="tro-over hidden"><div class="tro-box"><img src="data:image/jpeg;base64,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" alt="" style="display:block;max-width:100%;max-height:60vh;border-radius:10px;margin:0 auto 10px"><b id="hintCap"></b></div></div>
+<div id="trophyOverlay" class="tro-over hidden"><div class="tro-box"><div class="tro-ico" id="toIco"></div><div class="tro-t">Trophée débloqué !</div><b id="toName"></b><small id="toHow"></small></div></div>
+
+<script>
+// ---- Langues FR / DE / EN : le texte français sert de clé de traduction ----
+const I18N = {"de":{"Trouve le jour de la semaine de dates tirées au hasard.":"Finde den Wochentag zufällig gezogener Daten.","Jeu":"Spiel","Théorie":"Theorie","Boutique":"Shop","Trophées":"Trophäen","Mode":"Modus","Temps par date (secondes)":"Zeit pro Datum (Sekunden)","Décor":"Hintergrund","Nombre de dates":"Anzahl Daten","Période":"Zeitraum","Clavier : 1 = lundi … 7 = dimanche. ↑/↓ pour changer de date. Une réponse donnée ne peut plus être modifiée.":"Tastatur: 1 = Montag … 7 = Sonntag. ↑/↓ zum Wechseln des Datums. Eine gegebene Antwort kann nicht mehr geändert werden.","Meilleurs scores":"Bestenliste","Score":"Score","Nom":"Name","Date":"Datum","Réussite":"Erfolgsquote","Temps / rép.":"Zeit / Antw.","La méthode en bref":"Die Methode in Kürze","Tout se calcule <b>modulo 7</b> : on ne garde que le reste de la division par 7. Le résultat donne le jour de la semaine :":"Alles wird <b>modulo 7</b> gerechnet: man behält nur den Rest der Division durch 7. Das Ergebnis ist der Wochentag:","Dans le jeu, dimanche est le bouton 7 ; ici il vaut 0 (7 mod 7 = 0).":"Im Spiel ist Sonntag die Taste 7; hier gilt er als 0 (7 mod 7 = 0).","jour = ( J + M + A + S − B ) mod 7":"Wochentag = ( J + M + A + S − B ) mod 7","<b>J</b> : le quantième (1 à 31)":"<b>J</b>: der Tag im Monat (1 bis 31)","<b>M</b> : le code du mois":"<b>M</b>: der Monatscode","<b>A</b> : le code de l'année":"<b>A</b>: der Jahrescode","<b>S</b> : le code du siècle":"<b>S</b>: der Jahrhundertcode","<b>B</b> : 1 si l'année est bissextile <i>et</i> que le mois est janvier ou février, sinon 0":"<b>B</b>: 1, wenn das Jahr ein Schaltjahr ist <i>und</i> der Monat Januar oder Februar ist, sonst 0","<span class=\"step\">1</span>Le modulo 7":"<span class=\"step\">1</span>Das Modulo 7","Retire des multiples de 7 jusqu'à obtenir un nombre de 0 à 6. Astuce : 7, 14, 21, 28 ne comptent pas.":"Ziehe Vielfache von 7 ab, bis du eine Zahl von 0 bis 6 erhältst. Tipp: 7, 14, 21, 28 zählen nicht.","Tu peux réduire à chaque étape pour garder de petits nombres : la réponse reste la même.":"Du kannst in jedem Schritt reduzieren, um kleine Zahlen zu behalten: das Ergebnis bleibt gleich.","<span class=\"step\">2</span>Le code du mois":"<span class=\"step\">2</span>Der Monatscode","À retenir par groupes de trois mois :":"Merke dir jeweils drei Monate zusammen:","Repères : janvier = octobre = 0 · février = mars = novembre = 3 · avril = juillet = 6 · septembre = décembre = 5.":"Merkhilfen: Januar = Oktober = 0 · Februar = März = November = 3 · April = Juli = 6 · September = Dezember = 5.","<span class=\"step\">3</span>Le code du siècle":"<span class=\"step\">3</span>Der Jahrhundertcode","Il suit un cycle de 4 siècles (400 ans), puis tout recommence :":"Er folgt einem Zyklus von 4 Jahrhunderten (400 Jahre), dann beginnt alles von vorn:","Pour les années 1900 à 1999 → <b>0</b>, 2000 à 2099 → <b>6</b>, puis on descend de 2 à chaque siècle : 4, 2, 0, 6, 4, 2, 0, 6…":"Für die Jahre 1900 bis 1999 → <b>0</b>, 2000 bis 2099 → <b>6</b>, dann geht es mit jedem Jahrhundert um 2 nach unten: 4, 2, 0, 6, 4, 2, 0, 6…","<span class=\"step\">4</span>Le code de l'année et les bissextiles":"<span class=\"step\">4</span>Der Jahrescode und die Schaltjahre","Prends les <b>deux derniers chiffres</b> de l'année (yy) :":"Nimm die <b>letzten zwei Ziffern</b> des Jahres (yy):","⌊yy ÷ 4⌋ = combien de fois 4 entre dans yy (on ignore le reste). Exemple 26 : 26 + 6 = 32 → <b>4</b>.":"⌊yy ÷ 4⌋ = wie oft 4 in yy passt (der Rest wird ignoriert). Beispiel 26: 26 + 6 = 32 → <b>4</b>.","<b>Année bissextile</b> : modulo 4 = 0 (donc divisible par 4). Exception pour les années de siècle : 1900 et 2100 ne le sont pas, 2000 l'est (divisible par 400).":"<b>Schaltjahr</b>: Modulo 4 = 0 (also durch 4 teilbar). Ausnahme bei Jahrhundertjahren: 1900 und 2100 sind keine, 2000 ist eines (durch 400 teilbar).","Si l'année est bissextile et que la date est en <b>janvier ou février</b>, retranche 1 au total (B = 1). À partir de mars, rien à corriger.":"Ist das Jahr ein Schaltjahr und das Datum im <b>Januar oder Februar</b>, ziehe 1 von der Summe ab (B = 1). Ab März ist nichts zu korrigieren.","<span class=\"step\">5</span>Assembler : deux exemples":"<span class=\"step\">5</span>Zusammensetzen: zwei Beispiele","J = 5 · M (novembre) = 3 · S (2000s) = 6":"J = 5 · M (November) = 3 · S (2000er) = 6","A : 26 + 6 = 32 → 4":"A: 26 + 6 = 32 → 4","Total : 5 + 3 + 6 + 4 = 18 → 18 mod 7 = <b>4 = jeudi</b>":"Summe: 5 + 3 + 6 + 4 = 18 → 18 mod 7 = <b>4 = Donnerstag</b>","<b>29.02.2024</b> (année bissextile, février)":"<b>29.02.2024</b> (Schaltjahr, Februar)","J = 29 → 1 · M (février) = 3 · S = 6":"J = 29 → 1 · M (Februar) = 3 · S = 6","A : 24 + 6 = 30 → 2":"A: 24 + 6 = 30 → 2","B = 1 (bissextile, février)":"B = 1 (Schaltjahr, Februar)","Total : 1 + 3 + 6 + 2 − 1 = 11 → 11 mod 7 = <b>4 = jeudi</b>":"Summe: 1 + 3 + 6 + 2 − 1 = 11 → 11 mod 7 = <b>4 = Donnerstag</b>","La méthode fonctionne de l'an 1 à l'an 3000 (calendrier grégorien étendu vers le passé, comme dans le jeu).":"Die Methode funktioniert vom Jahr 1 bis zum Jahr 3000 (gregorianischer Kalender, wie im Spiel rückwirkend fortgeführt).","Calculateur pas à pas":"Schritt-für-Schritt-Rechner","Exerce-toi":"Üben","Mois":"Monat","Siècle":"Jahrhundert","Année":"Jahr","Chaque bonne réponse rapporte 1 point. Zen sans décor et la Théorie sont gratuits ; chaque mode coûte 500 points et chaque décor 100 points.":"Jede richtige Antwort bringt 1 Punkt. Zen ohne Hintergrund und die Theorie sind gratis; jeder Modus kostet 500 Punkte und jeder Hintergrund 100 Punkte.","Code promo":"Gutscheincode","Entrer un code":"Code eingeben","Entre un code pour recevoir des pièces (points).":"Gib einen Code ein, um Münzen (Punkte) zu erhalten.","Valider":"Einlösen","Salle des trophées":"Trophäenraum","Trophée débloqué !":"Trophäe freigeschaltet!","Série de jours joués":"Serie gespielter Tage","jj":"TT","mm":"MM","aaaa":"JJJJ","jour":"Tag","mois":"Monat","année":"Jahr","Survie":"Überleben","Démarrer":"Starten","Recommencer":"Neu starten","Terminer":"Beenden","Abandonner":"Aufgeben","Enregistrer le score":"Ergebnis speichern","Enregistré":"Gespeichert","⛔ Encore bloqué : {t}":"⛔ Noch gesperrt: {t}","Score (0 à 20)":"Score (0 bis 20)","Taux de réussite":"Erfolgsquote","Temps total":"Gesamtzeit","Temps / bonne réponse":"Zeit / richtige Antwort","Dates d'affilée":"Daten in Folge","Temps par date":"Zeit pro Datum","Temps moyen / date":"Ø Zeit / Datum","Score (bonnes × réussite)":"Score (richtig × Quote)","Bonnes / fausses":"Richtig / falsch","Aucun score pour l'instant.":"Noch keine Ergebnisse.","Anonyme":"Anonym","Survie · {s} s par date":"Überleben · {s} s pro Datum","Sprint · 5 minutes":"Sprint · 5 Minuten","Zen · {n} dates":"Zen · {n} Daten","Zen · {n} date":"Zen · {n} Datum","Flash · {n} dates":"Flash · {n} Daten","Flash · {n} date":"Flash · {n} Datum","Survie : tu as le temps choisi pour trouver une date, puis la suivante… La partie s'arrête à la première erreur ou quand le temps est écoulé. Pas de pause.":"Überleben: Du hast die gewählte Zeit, um ein Datum zu finden, dann das nächste … Das Spiel endet beim ersten Fehler oder wenn die Zeit abgelaufen ist. Keine Pause.","Sprint : 5 minutes pour trouver un maximum de dates. Les fautes sont permises mais font baisser le taux de réussite. Score = bonnes réponses × taux de réussite. Pas de pause.":"Sprint: 5 Minuten, um möglichst viele Daten zu finden. Fehler sind erlaubt, senken aber die Erfolgsquote. Score = richtige Antworten × Erfolgsquote. Keine Pause.","Flash : la date s'affiche 4 secondes sur fond blanc, puis l'écran passe au noir : retrouve le jour de mémoire.":"Flash: Das Datum erscheint 4 Sekunden auf weissem Hintergrund, dann wird der Bildschirm schwarz: finde den Wochentag aus dem Gedächtnis.","Série : <b>{n}</b>":"Serie: <b>{n}</b>","Temps écoulé":"Zeit abgelaufen"," – c'était {d}":" – es war {d}","Erreur – c'était {d}":"Fehler – es war {d}","Abandon":"Aufgegeben","Date invalide.":"Ungültiges Datum.","année bissextile":"Schaltjahr","année non bissextile":"kein Schaltjahr",", mais après février":", aber nach Februar","Total : {e}":"Summe: {e}","A : {e}":"A: {e}","B : {e}":"B: {e}","Code du mois de <b>{m}</b> ?":"Code für den Monat <b>{m}</b>?","Code du siècle <b>{c}00 – {c}99</b> ?":"Code für das Jahrhundert <b>{c}00 – {c}99</b>?","Code de l'année <b>{y}</b> (yy + yy ÷ 4, modulo 7) ?":"Code für das Jahr <b>{y}</b> (yy + yy ÷ 4, Modulo 7)?","{ok} / {n} bonnes réponses":"{ok} / {n} richtige Antworten","✓ Juste":"✓ Richtig","✗ C'était {a}":"✗ Es war {a}","⭐ {n} pts":"⭐ {n} Pkt.","{n} pts":"{n} Pkt.","Solde : ⭐ {n} pts":"Guthaben: ⭐ {n} Pkt.","+{n} point ⭐":"+{n} Punkt ⭐","+{n} points ⭐":"+{n} Punkte ⭐","🔒 Mode {m} verrouillé : {p} points dans la boutique":"🔒 Modus {m} gesperrt: {p} Punkte im Shop","Débloqué ✓":"Freigeschaltet ✓","(saison actuelle)":"(aktuelle Jahreszeit)","Modes de jeu ({p} pts)":"Spielmodi ({p} Pkt.)","Décors Zen ({p} pts)":"Zen-Hintergründe ({p} Pkt.)","Décors Survie ({p} pts)":"Überleben-Hintergründe ({p} Pkt.)","Décors Sprint ({p} pts)":"Sprint-Hintergründe ({p} Pkt.)","Décors des saisons ({p} pts)":"Jahreszeiten-Hintergründe ({p} Pkt.)","Mode Survie":"Modus Überleben","Une date à la fois, un chrono par date, jusqu'à la première erreur.":"Ein Datum nach dem anderen, ein Timer pro Datum, bis zum ersten Fehler.","Mode Sprint":"Modus Sprint","5 minutes pour trouver un maximum de dates, fautes permises.":"5 Minuten, um möglichst viele Daten zu finden, Fehler erlaubt.","Mode Flash":"Modus Flash","La date disparaît après 4 s : écran blanc, puis tout noir.":"Das Datum verschwindet nach 4 s: weisser Bildschirm, dann ganz schwarz.","Jardin japonais":"Japanischer Garten","Bambous et lune":"Bambus und Mond","Volcan":"Vulkan","Île déserte":"Einsame Insel","Banquise":"Packeis","Chronomètre":"Stoppuhr","Piste d'athlétisme":"Leichtathletikbahn","Vitesse néon":"Neon-Speed","Printemps":"Frühling","Été":"Sommer","Automne":"Herbst","Hiver":"Winter","Un yin-yang apaisant qui tourne lentement.":"Ein beruhigendes Yin-Yang, das sich langsam dreht.","Mont Fuji, torii et cerisier en fleurs.":"Fuji, Torii und blühender Kirschbaum.","Forêt de bambous sous la pleine lune.":"Bambuswald unter dem Vollmond.","Volcan, flammes et braises.":"Vulkan, Flammen und Glut.","Naufragé autour d'un feu de camp.":"Schiffbrüchig am Lagerfeuer.","Icebergs, aurore boréale et manchot.":"Eisberge, Polarlicht und Pinguin.","Un chronomètre géant dont la trotteuse tourne.":"Eine riesige Stoppuhr mit drehendem Sekundenzeiger.","Couloirs, stade et ligne d'arrivée.":"Bahnen, Stadion und Ziellinie.","Autoroute néon et soleil rétro.":"Neon-Highway und Retro-Sonne.","Prairie fleurie sous le soleil.":"Blumenwiese in der Sonne.","Plage, mer et parasol.":"Strand, Meer und Sonnenschirm.","Arbres roux et feuilles qui tombent.":"Rotbraune Bäume und fallende Blätter.","Sapins enneigés et bonhomme de neige.":"Verschneite Tannen und Schneemann.","Survivant":"Überlebender","Débloquer le mode Survie":"Modus Überleben freischalten","Sprinteur":"Sprinter","Débloquer le mode Sprint":"Modus Sprint freischalten","Éclair":"Blitz","Débloquer le mode Flash":"Modus Flash freischalten","Équilibre":"Gleichgewicht","Débloquer le décor Zen":"Zen-Hintergrund freischalten","Volcanologue":"Vulkanologe","Débloquer le décor Survie":"Hintergrund Überleben freischalten","Maître du temps":"Meister der Zeit","Débloquer le décor Sprint":"Sprint-Hintergrund freischalten","Remplir chaque tableau de scores (10 scores) : Zen et Flash (1/3/5/20 dates), Survie (5/10/20 s), Sprint, chacun pour les 2 périodes":"Jede Bestenliste füllen (10 Ergebnisse): Zen und Flash (1/3/5/20 Daten), Überleben (5/10/20 s), Sprint, jeweils für beide Zeiträume","Speed Survie":"Speed Überleben","Zen, 1 date : juste, en 10 s ou moins":"Zen, 1 Datum: richtig, in 10 s oder weniger","Zen, 3 dates : 100 % de justes, 10 s ou moins par réponse en moyenne":"Zen, 3 Daten: 100 % richtig, durchschnittlich 10 s oder weniger pro Antwort","Zen, 5 dates : 100 % de justes, 10 s ou moins par réponse en moyenne":"Zen, 5 Daten: 100 % richtig, durchschnittlich 10 s oder weniger pro Antwort","Zen, 20 dates : 100 % de justes, 10 s ou moins par réponse en moyenne":"Zen, 20 Daten: 100 % richtig, durchschnittlich 10 s oder weniger pro Antwort","Survie : au moins 5 bonnes réponses de suite, 10 s ou moins par réponse en moyenne":"Überleben: mindestens 5 richtige Antworten in Folge, durchschnittlich 10 s oder weniger pro Antwort","Sprint : au moins 30 bonnes réponses en 5 minutes (6 par minute)":"Sprint: mindestens 30 richtige Antworten in 5 Minuten (6 pro Minute)","Tricheur":"Betrüger","Avoir été bloqué 5 minutes pour avoir répondu trop vite":"Wegen zu schneller Antworten 5 Minuten gesperrt worden sein","Sans faute":"Fehlerfrei","Zen, 20 dates : 20/20 du premier coup":"Zen, 20 Daten: 20/20 im ersten Versuch","Sang-froid":"Kaltblütigkeit","Survie : réussir une date avec moins d'une seconde restante":"Überleben: ein Datum mit weniger als einer Sekunde Restzeit lösen","Machine":"Maschine","Survie : 20 bonnes réponses de suite":"Überleben: 20 richtige Antworten in Folge","Hypersonique":"Hyperschall","Sprint : 60 bonnes réponses en 5 minutes":"Sprint: 60 richtige Antworten in 5 Minuten","Voyageur du temps":"Zeitreisender","Partie parfaite (au moins 3 dates, Zen ou Flash) sur la période 0001 – 3000":"Perfektes Spiel (mindestens 3 Daten, Zen oder Flash) im Zeitraum 0001 – 3000","Mémoire d'éléphant":"Elefantengedächtnis","Flash : 5 dates de suite justes":"Flash: 5 richtige Daten in Folge","Brasier":"Flammenmeer","Flamme de 7 jours de suite":"Flamme über 7 Tage in Folge","Brasier éternel":"Ewiges Feuer","Flamme de 30 jours de suite":"Flamme über 30 Tage in Folge","Lève-tôt":"Frühaufsteher","Terminer une partie entre 4 h et 6 h du matin":"Ein Spiel zwischen 4 und 6 Uhr morgens beenden","Oiseau de nuit":"Nachteule","Terminer une partie entre minuit et 4 h du matin":"Ein Spiel zwischen Mitternacht und 4 Uhr morgens beenden","Phénix":"Phönix","Rallumer une flamme éteinte, puis la mener à 7 jours de plus":"Eine erloschene Flamme neu entzünden und danach 7 weitere Tage durchhalten","Chanceux":"Glückspilz","Tomber sur un vendredi 13":"Auf einen Freitag, den 13., treffen","Joyeux anniversaire":"Alles Gute zum Geburtstag","Tomber sur la date du jour (jour et mois d'aujourd'hui)":"Auf das heutige Datum treffen (Tag und Monat von heute)","Économe":"Sparfuchs","Gagner 500 points en jouant sans rien dépenser":"500 Punkte erspielen, ohne etwas auszugeben","Collectionneur":"Sammler","Tout débloquer dans la boutique (modes et décors)":"Alles im Shop freischalten (Modi und Hintergründe)","Débloquer le décor « {name} »":"Hintergrund «{name}» freischalten","Crésus":"Krösus","À acheter : version argentée (1991 pts) et version dorée (3001 pts)":"Zu kaufen: Silberversion (1991 Pkt.) und Goldversion (3001 Pkt.)","Légende":"Legende","Gagner tous les trophées":"Alle Trophäen gewinnen","Crésus d'argent":"Krösus in Silber","Crésus d'or":"Krösus in Gold","Trophée acheté pour {n} pts":"Trophäe gekauft für {n} Pkt.","Obtenu le {d}":"Erhalten am {d}","Obtenu le {d} ({l})":"Erhalten am {d} ({l})","argent":"Silber","or":"Gold","Tableaux de scores complets (10 scores chacun) pour le 100 % : ":"Vollständige Bestenlisten (je 10 Ergebnisse) für die 100 %: ","Flamme éteinte : rallume-la dans la boutique (10 pts)":"Flamme erloschen: entzünde sie im Shop neu (10 Pkt.)","Joue aujourd'hui pour garder ta série":"Spiele heute, um deine Serie zu halten","🔥 Flamme rallumée !":"🔥 Flamme neu entzündet!","Tu as joué aujourd'hui : la flamme est allumée.":"Du hast heute gespielt: die Flamme brennt.","Joue une partie aujourd'hui pour garder ta série.":"Spiele heute eine Partie, um deine Serie zu halten.","Tu as manqué un jour ! Rallume la flamme avant de jouer, sinon ta série repart de 1.":"Du hast einen Tag verpasst! Entzünde die Flamme vor dem Spielen neu, sonst beginnt deine Serie wieder bei 1.","Joue chaque jour pour allumer la flamme.":"Spiele jeden Tag, um die Flamme zu entzünden.","Rallumer (10 pts)":"Neu entzünden (10 Pkt.)","Flamme : {n} jour de suite":"Flamme: {n} Tag in Folge","Flamme : {n} jours de suite":"Flamme: {n} Tage in Folge","💨 Ta flamme est éteinte : rallume-la dans la boutique (10 pts)":"💨 Deine Flamme ist erloschen: entzünde sie im Shop neu (10 Pkt.)","⛔ Trop rapide ! Réponses bloquées : {t}":"⛔ Zu schnell! Antworten gesperrt: {t}","Aucun":"Keiner","❌ Code invalide":"❌ Ungültiger Code","Ce code a déjà été utilisé":"Dieser Code wurde bereits verwendet","💰 +{n} points !":"💰 +{n} Punkte!","Utiliser toute la suite de codes Fibonacci":"Die ganze Fibonacci-Codefolge verwenden","Acheter des pièces":"Münzen kaufen","{n} pièces":"{n} Münzen","🪙 +{n} pièces achetées !":"🪙 +{n} Münzen gekauft!","⏳ Paiement en attente…":"⏳ Zahlung ausstehend…","❌ Achat impossible pour le moment":"❌ Kauf im Moment nicht möglich","Pas assez de points : il en faut {n}":"Nicht genug Punkte: du brauchst {n}","Coût : {c} pts · Gain : 2 pts par bonne réponse":"Kosten: {c} Pkt. · Gewinn: 2 Pkt. pro richtige Antwort","Coût : {c} pts · Gain : 1 pt par bonne réponse":"Kosten: {c} Pkt. · Gewinn: 1 Pkt. pro richtige Antwort","Coût : 5 pts · Gain par date : 1 pt, 2 pts en moins de 5 s, 3 pts en moins de 3 s":"Kosten: 5 Pkt. · Gewinn pro Datum: 1 Pkt., 2 Pkt. unter 5 s, 3 Pkt. unter 3 s","Coût : 15 pts · Gain : 1 pt par bonne réponse":"Kosten: 15 Pkt. · Gewinn: 1 Pkt. pro richtige Antwort","🎁 Bonus du jour : +10 points !":"🎁 Tagesbonus: +10 Punkte!","Indice":"Hinweis"},"en":{"Trouve le jour de la semaine de dates tirées au hasard.":"Find the day of the week for randomly drawn dates.","Jeu":"Game","Théorie":"Theory","Boutique":"Shop","Trophées":"Trophies","Mode":"Mode","Temps par date (secondes)":"Time per date (seconds)","Décor":"Background","Nombre de dates":"Number of dates","Période":"Period","Clavier : 1 = lundi … 7 = dimanche. ↑/↓ pour changer de date. Une réponse donnée ne peut plus être modifiée.":"Keyboard: 1 = Monday … 7 = Sunday. ↑/↓ to change the date. An answer can no longer be changed once given.","Meilleurs scores":"High scores","Score":"Score","Nom":"Name","Date":"Date","Réussite":"Success","Temps / rép.":"Time / ans.","La méthode en bref":"The method in brief","Tout se calcule <b>modulo 7</b> : on ne garde que le reste de la division par 7. Le résultat donne le jour de la semaine :":"Everything is calculated <b>modulo 7</b>: you only keep the remainder of the division by 7. The result gives the day of the week:","Dans le jeu, dimanche est le bouton 7 ; ici il vaut 0 (7 mod 7 = 0).":"In the game, Sunday is button 7; here it is worth 0 (7 mod 7 = 0).","jour = ( J + M + A + S − B ) mod 7":"day = ( J + M + A + S − B ) mod 7","<b>J</b> : le quantième (1 à 31)":"<b>J</b>: the day of the month (1 to 31)","<b>M</b> : le code du mois":"<b>M</b>: the month code","<b>A</b> : le code de l'année":"<b>A</b>: the year code","<b>S</b> : le code du siècle":"<b>S</b>: the century code","<b>B</b> : 1 si l'année est bissextile <i>et</i> que le mois est janvier ou février, sinon 0":"<b>B</b>: 1 if the year is a leap year <i>and</i> the month is January or February, otherwise 0","<span class=\"step\">1</span>Le modulo 7":"<span class=\"step\">1</span>Modulo 7","Retire des multiples de 7 jusqu'à obtenir un nombre de 0 à 6. Astuce : 7, 14, 21, 28 ne comptent pas.":"Subtract multiples of 7 until you get a number from 0 to 6. Tip: 7, 14, 21, 28 do not count.","Tu peux réduire à chaque étape pour garder de petits nombres : la réponse reste la même.":"You can reduce at each step to keep the numbers small: the answer stays the same.","<span class=\"step\">2</span>Le code du mois":"<span class=\"step\">2</span>The month code","À retenir par groupes de trois mois :":"Remember them in groups of three months:","Repères : janvier = octobre = 0 · février = mars = novembre = 3 · avril = juillet = 6 · septembre = décembre = 5.":"Landmarks: January = October = 0 · February = March = November = 3 · April = July = 6 · September = December = 5.","<span class=\"step\">3</span>Le code du siècle":"<span class=\"step\">3</span>The century code","Il suit un cycle de 4 siècles (400 ans), puis tout recommence :":"It follows a cycle of 4 centuries (400 years), then everything starts over:","Pour les années 1900 à 1999 → <b>0</b>, 2000 à 2099 → <b>6</b>, puis on descend de 2 à chaque siècle : 4, 2, 0, 6, 4, 2, 0, 6…":"For the years 1900 to 1999 → <b>0</b>, 2000 to 2099 → <b>6</b>, then it goes down by 2 with each century: 4, 2, 0, 6, 4, 2, 0, 6…","<span class=\"step\">4</span>Le code de l'année et les bissextiles":"<span class=\"step\">4</span>The year code and leap years","Prends les <b>deux derniers chiffres</b> de l'année (yy) :":"Take the <b>last two digits</b> of the year (yy):","⌊yy ÷ 4⌋ = combien de fois 4 entre dans yy (on ignore le reste). Exemple 26 : 26 + 6 = 32 → <b>4</b>.":"⌊yy ÷ 4⌋ = how many times 4 fits into yy (ignore the remainder). Example 26: 26 + 6 = 32 → <b>4</b>.","<b>Année bissextile</b> : modulo 4 = 0 (donc divisible par 4). Exception pour les années de siècle : 1900 et 2100 ne le sont pas, 2000 l'est (divisible par 400).":"<b>Leap year</b>: modulo 4 = 0 (so divisible by 4). Exception for century years: 1900 and 2100 are not leap years, 2000 is (divisible by 400).","Si l'année est bissextile et que la date est en <b>janvier ou février</b>, retranche 1 au total (B = 1). À partir de mars, rien à corriger.":"If the year is a leap year and the date is in <b>January or February</b>, subtract 1 from the total (B = 1). From March on, there is nothing to correct.","<span class=\"step\">5</span>Assembler : deux exemples":"<span class=\"step\">5</span>Putting it together: two examples","J = 5 · M (novembre) = 3 · S (2000s) = 6":"J = 5 · M (November) = 3 · S (2000s) = 6","A : 26 + 6 = 32 → 4":"A: 26 + 6 = 32 → 4","Total : 5 + 3 + 6 + 4 = 18 → 18 mod 7 = <b>4 = jeudi</b>":"Total: 5 + 3 + 6 + 4 = 18 → 18 mod 7 = <b>4 = Thursday</b>","<b>29.02.2024</b> (année bissextile, février)":"<b>29.02.2024</b> (leap year, February)","J = 29 → 1 · M (février) = 3 · S = 6":"J = 29 → 1 · M (February) = 3 · S = 6","A : 24 + 6 = 30 → 2":"A: 24 + 6 = 30 → 2","B = 1 (bissextile, février)":"B = 1 (leap year, February)","Total : 1 + 3 + 6 + 2 − 1 = 11 → 11 mod 7 = <b>4 = jeudi</b>":"Total: 1 + 3 + 6 + 2 − 1 = 11 → 11 mod 7 = <b>4 = Thursday</b>","La méthode fonctionne de l'an 1 à l'an 3000 (calendrier grégorien étendu vers le passé, comme dans le jeu).":"The method works from year 1 to year 3000 (Gregorian calendar extended backwards, as in the game).","Calculateur pas à pas":"Step-by-step calculator","Exerce-toi":"Practice","Mois":"Month","Siècle":"Century","Année":"Year","Chaque bonne réponse rapporte 1 point. Zen sans décor et la Théorie sont gratuits ; chaque mode coûte 500 points et chaque décor 100 points.":"Each correct answer earns 1 point. Zen without a background and the Theory are free; each mode costs 500 points and each background 100 points.","Code promo":"Promo code","Entrer un code":"Enter a code","Entre un code pour recevoir des pièces (points).":"Enter a code to receive coins (points).","Valider":"Redeem","Salle des trophées":"Trophy room","Trophée débloqué !":"Trophy unlocked!","Série de jours joués":"Streak of days played","jj":"dd","mm":"mm","aaaa":"yyyy","jour":"day","mois":"month","année":"year","Survie":"Survival","Démarrer":"Start","Recommencer":"Restart","Terminer":"Finish","Abandonner":"Give up","Enregistrer le score":"Save score","Enregistré":"Saved","⛔ Encore bloqué : {t}":"⛔ Still blocked: {t}","Score (0 à 20)":"Score (0 to 20)","Taux de réussite":"Success rate","Temps total":"Total time","Temps / bonne réponse":"Time / correct answer","Dates d'affilée":"Dates in a row","Temps par date":"Time per date","Temps moyen / date":"Avg. time / date","Score (bonnes × réussite)":"Score (correct × success)","Bonnes / fausses":"Correct / wrong","Aucun score pour l'instant.":"No scores yet.","Anonyme":"Anonymous","Survie · {s} s par date":"Survival · {s} s per date","Sprint · 5 minutes":"Sprint · 5 minutes","Zen · {n} dates":"Zen · {n} dates","Zen · {n} date":"Zen · {n} date","Flash · {n} dates":"Flash · {n} dates","Flash · {n} date":"Flash · {n} date","Survie : tu as le temps choisi pour trouver une date, puis la suivante… La partie s'arrête à la première erreur ou quand le temps est écoulé. Pas de pause.":"Survival: you have the chosen time to find a date, then the next one… The game ends at the first mistake or when time runs out. No pause.","Sprint : 5 minutes pour trouver un maximum de dates. Les fautes sont permises mais font baisser le taux de réussite. Score = bonnes réponses × taux de réussite. Pas de pause.":"Sprint: 5 minutes to find as many dates as possible. Mistakes are allowed but lower the success rate. Score = correct answers × success rate. No pause.","Flash : la date s'affiche 4 secondes sur fond blanc, puis l'écran passe au noir : retrouve le jour de mémoire.":"Flash: the date is shown for 4 seconds on a white background, then the screen turns black: find the day from memory.","Série : <b>{n}</b>":"Streak: <b>{n}</b>","Temps écoulé":"Time's up"," – c'était {d}":" – it was {d}","Erreur – c'était {d}":"Mistake – it was {d}","Abandon":"Gave up","Date invalide.":"Invalid date.","année bissextile":"leap year","année non bissextile":"not a leap year",", mais après février":", but after February","Total : {e}":"Total: {e}","A : {e}":"A: {e}","B : {e}":"B: {e}","Code du mois de <b>{m}</b> ?":"Code for the month of <b>{m}</b>?","Code du siècle <b>{c}00 – {c}99</b> ?":"Code for the century <b>{c}00 – {c}99</b>?","Code de l'année <b>{y}</b> (yy + yy ÷ 4, modulo 7) ?":"Code for the year <b>{y}</b> (yy + yy ÷ 4, modulo 7)?","{ok} / {n} bonnes réponses":"{ok} / {n} correct answers","✓ Juste":"✓ Correct","✗ C'était {a}":"✗ It was {a}","⭐ {n} pts":"⭐ {n} pts","{n} pts":"{n} pts","Solde : ⭐ {n} pts":"Balance: ⭐ {n} pts","+{n} point ⭐":"+{n} point ⭐","+{n} points ⭐":"+{n} points ⭐","🔒 Mode {m} verrouillé : {p} points dans la boutique":"🔒 {m} mode locked: {p} points in the shop","Débloqué ✓":"Unlocked ✓","(saison actuelle)":"(current season)","Modes de jeu ({p} pts)":"Game modes ({p} pts)","Décors Zen ({p} pts)":"Zen backgrounds ({p} pts)","Décors Survie ({p} pts)":"Survival backgrounds ({p} pts)","Décors Sprint ({p} pts)":"Sprint backgrounds ({p} pts)","Décors des saisons ({p} pts)":"Seasonal backgrounds ({p} pts)","Mode Survie":"Survival mode","Une date à la fois, un chrono par date, jusqu'à la première erreur.":"One date at a time, a timer per date, until the first mistake.","Mode Sprint":"Sprint mode","5 minutes pour trouver un maximum de dates, fautes permises.":"5 minutes to find as many dates as possible, mistakes allowed.","Mode Flash":"Flash mode","La date disparaît après 4 s : écran blanc, puis tout noir.":"The date disappears after 4 s: white screen, then all black.","Jardin japonais":"Japanese garden","Bambous et lune":"Bamboo and moon","Volcan":"Volcano","Île déserte":"Desert island","Banquise":"Pack ice","Chronomètre":"Stopwatch","Piste d'athlétisme":"Running track","Vitesse néon":"Neon speed","Printemps":"Spring","Été":"Summer","Automne":"Autumn","Hiver":"Winter","Un yin-yang apaisant qui tourne lentement.":"A soothing yin-yang that turns slowly.","Mont Fuji, torii et cerisier en fleurs.":"Mount Fuji, torii and a cherry tree in bloom.","Forêt de bambous sous la pleine lune.":"Bamboo forest under the full moon.","Volcan, flammes et braises.":"Volcano, flames and embers.","Naufragé autour d'un feu de camp.":"Castaway around a campfire.","Icebergs, aurore boréale et manchot.":"Icebergs, northern lights and a penguin.","Un chronomètre géant dont la trotteuse tourne.":"A giant stopwatch with a turning second hand.","Couloirs, stade et ligne d'arrivée.":"Lanes, stadium and finish line.","Autoroute néon et soleil rétro.":"Neon highway and retro sun.","Prairie fleurie sous le soleil.":"Flowering meadow in the sun.","Plage, mer et parasol.":"Beach, sea and parasol.","Arbres roux et feuilles qui tombent.":"Russet trees and falling leaves.","Sapins enneigés et bonhomme de neige.":"Snowy firs and a snowman.","Survivant":"Survivor","Débloquer le mode Survie":"Unlock the Survival mode","Sprinteur":"Sprinter","Débloquer le mode Sprint":"Unlock the Sprint mode","Éclair":"Lightning","Débloquer le mode Flash":"Unlock the Flash mode","Équilibre":"Balance","Débloquer le décor Zen":"Unlock the Zen background","Volcanologue":"Volcanologist","Débloquer le décor Survie":"Unlock the Survival background","Maître du temps":"Master of time","Débloquer le décor Sprint":"Unlock the Sprint background","Remplir chaque tableau de scores (10 scores) : Zen et Flash (1/3/5/20 dates), Survie (5/10/20 s), Sprint, chacun pour les 2 périodes":"Fill every high-score table (10 scores): Zen and Flash (1/3/5/20 dates), Survival (5/10/20 s), Sprint, each for both periods","Speed Survie":"Speed Survival","Zen, 1 date : juste, en 10 s ou moins":"Zen, 1 date: correct, in 10 s or less","Zen, 3 dates : 100 % de justes, 10 s ou moins par réponse en moyenne":"Zen, 3 dates: 100% correct, 10 s or less per answer on average","Zen, 5 dates : 100 % de justes, 10 s ou moins par réponse en moyenne":"Zen, 5 dates: 100% correct, 10 s or less per answer on average","Zen, 20 dates : 100 % de justes, 10 s ou moins par réponse en moyenne":"Zen, 20 dates: 100% correct, 10 s or less per answer on average","Survie : au moins 5 bonnes réponses de suite, 10 s ou moins par réponse en moyenne":"Survival: at least 5 correct answers in a row, 10 s or less per answer on average","Sprint : au moins 30 bonnes réponses en 5 minutes (6 par minute)":"Sprint: at least 30 correct answers in 5 minutes (6 per minute)","Tricheur":"Cheater","Avoir été bloqué 5 minutes pour avoir répondu trop vite":"Having been blocked for 5 minutes for answering too fast","Sans faute":"Flawless","Zen, 20 dates : 20/20 du premier coup":"Zen, 20 dates: 20/20 on the first try","Sang-froid":"Cool head","Survie : réussir une date avec moins d'une seconde restante":"Survival: get a date right with less than one second left","Machine":"Machine","Survie : 20 bonnes réponses de suite":"Survival: 20 correct answers in a row","Hypersonique":"Hypersonic","Sprint : 60 bonnes réponses en 5 minutes":"Sprint: 60 correct answers in 5 minutes","Voyageur du temps":"Time traveler","Partie parfaite (au moins 3 dates, Zen ou Flash) sur la période 0001 – 3000":"Perfect game (at least 3 dates, Zen or Flash) on the 0001 – 3000 period","Mémoire d'éléphant":"Elephant memory","Flash : 5 dates de suite justes":"Flash: 5 correct dates in a row","Brasier":"Blaze","Flamme de 7 jours de suite":"Flame streak of 7 days in a row","Brasier éternel":"Eternal blaze","Flamme de 30 jours de suite":"Flame streak of 30 days in a row","Lève-tôt":"Early bird","Terminer une partie entre 4 h et 6 h du matin":"Finish a game between 4 and 6 a.m.","Oiseau de nuit":"Night owl","Terminer une partie entre minuit et 4 h du matin":"Finish a game between midnight and 4 a.m.","Phénix":"Phoenix","Rallumer une flamme éteinte, puis la mener à 7 jours de plus":"Relight an extinguished flame, then keep it going for 7 more days","Chanceux":"Lucky","Tomber sur un vendredi 13":"Land on a Friday the 13th","Joyeux anniversaire":"Happy birthday","Tomber sur la date du jour (jour et mois d'aujourd'hui)":"Land on today's date (today's day and month)","Économe":"Thrifty","Gagner 500 points en jouant sans rien dépenser":"Earn 500 points by playing without spending anything","Collectionneur":"Collector","Tout débloquer dans la boutique (modes et décors)":"Unlock everything in the shop (modes and backgrounds)","Débloquer le décor « {name} »":"Unlock the “{name}” background","Crésus":"Croesus","À acheter : version argentée (1991 pts) et version dorée (3001 pts)":"To buy: silver version (1991 pts) and gold version (3001 pts)","Légende":"Legend","Gagner tous les trophées":"Win all the trophies","Crésus d'argent":"Croesus in silver","Crésus d'or":"Croesus in gold","Trophée acheté pour {n} pts":"Trophy bought for {n} pts","Obtenu le {d}":"Obtained on {d}","Obtenu le {d} ({l})":"Obtained on {d} ({l})","argent":"silver","or":"gold","Tableaux de scores complets (10 scores chacun) pour le 100 % : ":"Complete score tables (10 scores each) for the 100%: ","Flamme éteinte : rallume-la dans la boutique (10 pts)":"Flame out: relight it in the shop (10 pts)","Joue aujourd'hui pour garder ta série":"Play today to keep your streak","🔥 Flamme rallumée !":"🔥 Flame relit!","Tu as joué aujourd'hui : la flamme est allumée.":"You played today: the flame is lit.","Joue une partie aujourd'hui pour garder ta série.":"Play a game today to keep your streak.","Tu as manqué un jour ! Rallume la flamme avant de jouer, sinon ta série repart de 1.":"You missed a day! Relight the flame before playing, otherwise your streak restarts at 1.","Joue chaque jour pour allumer la flamme.":"Play every day to light the flame.","Rallumer (10 pts)":"Relight (10 pts)","Flamme : {n} jour de suite":"Flame: {n} day in a row","Flamme : {n} jours de suite":"Flame: {n} days in a row","💨 Ta flamme est éteinte : rallume-la dans la boutique (10 pts)":"💨 Your flame is out: relight it in the shop (10 pts)","⛔ Trop rapide ! Réponses bloquées : {t}":"⛔ Too fast! Answers blocked: {t}","Aucun":"None","❌ Code invalide":"❌ Invalid code","Ce code a déjà été utilisé":"This code has already been used","💰 +{n} points !":"💰 +{n} points!","Utiliser toute la suite de codes Fibonacci":"Use the whole Fibonacci sequence of codes","Acheter des pièces":"Buy coins","{n} pièces":"{n} coins","🪙 +{n} pièces achetées !":"🪙 +{n} coins purchased!","⏳ Paiement en attente…":"⏳ Payment pending…","❌ Achat impossible pour le moment":"❌ Purchase not possible right now","Pas assez de points : il en faut {n}":"Not enough points: you need {n}","Coût : {c} pts · Gain : 2 pts par bonne réponse":"Cost: {c} pts · Reward: 2 pts per correct answer","Coût : {c} pts · Gain : 1 pt par bonne réponse":"Cost: {c} pts · Reward: 1 pt per correct answer","Coût : 5 pts · Gain par date : 1 pt, 2 pts en moins de 5 s, 3 pts en moins de 3 s":"Cost: 5 pts · Reward per date: 1 pt, 2 pts under 5 s, 3 pts under 3 s","Coût : 15 pts · Gain : 1 pt par bonne réponse":"Cost: 15 pts · Reward: 1 pt per correct answer","🎁 Bonus du jour : +10 points !":"🎁 Daily bonus: +10 points!","Indice":"Hint"}};
+const LANGS = ["fr","de","en"];
+const DAY_NAMES = {
+  fr:["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"],
+  de:["Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag"],
+  en:["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"]
+};
+const DAY_SHORTS = {fr:["lu","ma","me","je","ve","sa","di"], de:["Mo","Di","Mi","Do","Fr","Sa","So"], en:["Mo","Tu","We","Th","Fr","Sa","Su"]};
+const MONTH_NAMES = {
+  fr:["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"],
+  de:["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"],
+  en:["January","February","March","April","May","June","July","August","September","October","November","December"]
+};
+let lang = (() => {
+  try{ const s = localStorage.getItem("dayguess.lang"); if(LANGS.includes(s)) return s; }catch(e){}
+  const n = String(navigator.language || "fr").slice(0,2).toLowerCase();
+  return LANGS.includes(n) ? n : "fr";
+})();
+function T(fr, v){
+  let s = String(fr);
+  const d = I18N[lang];
+  if(d && Object.prototype.hasOwnProperty.call(d, s)) s = d[s];
+  if(v) for(const k in v) s = s.split("{"+k+"}").join(v[k]);
+  return s;
+}
+let DAYS, DAYS_SHORT, MONTHS, DAYS_SUN0;   // index 0 = lundi (DAYS_SUN0 : dimanche = 0)
+function setLangData(){
+  DAYS = DAY_NAMES[lang]; DAYS_SHORT = DAY_SHORTS[lang]; MONTHS = MONTH_NAMES[lang];
+  DAYS_SUN0 = [DAYS[6]].concat(DAYS.slice(0,6));
+  document.documentElement.lang = lang;
+}
+// Textes fixes de la page : repérés une fois, retraduits à chaque changement de langue
+const NOTR = "#modeSeg,#list,#days,#hsBody,#shopList,#troGrid,#flameBox,#thDays,#thMonths,#thCent,#thBtns,#thQ,#thScore,#thFb,#thOut,#compInfo,#blockBar,#gain,#hsLabel,#shopBal,#troCount,#troProg,#pts,#flameChip,#timer,#modeHelp,#startBtn,#stopBtn,#saveBtn,#bgSel,#langSel,#resultCard .k,#toast,#toIco,#toName,#toHow,.stat .v,#bgScene,.chip";
+const trEls = [];
+(function markStatic(){
+  const keys = new Set(Object.keys(I18N.de));
+  const INLINE = new Set(["B","I","SMALL","SPAN","BR","SUP","SUB","EM","STRONG"]);
+  const SKIP = new Set(["SCRIPT","STYLE","SELECT","OPTION","SVG","INPUT","TEXTAREA"]);
+  const inlineOnly = el => Array.from(el.querySelectorAll("*")).every(d => INLINE.has(d.tagName));
+  const walk = el => {
+    if(el.nodeType!==1 || SKIP.has(el.tagName) || el.matches(NOTR)) return;
+    if(!el.querySelector(NOTR) && inlineOnly(el)){
+      const k = el.innerHTML.replace(/\s+/g," ").trim();
+      if(keys.has(k)) trEls.push({el, fr:k});
+      return;
+    }
+    Array.from(el.children).forEach(walk);
+  };
+  walk(document.querySelector("main")); walk(document.getElementById("trophyOverlay"));
+  document.querySelectorAll("[placeholder],[title],[aria-label]").forEach(el => {
+    if(el.closest(NOTR)) return;
+    ["placeholder","title","aria-label"].forEach(a => { const v = el.getAttribute(a); if(v && keys.has(v)) trEls.push({el, attr:a, fr:v}); });
+  });
+})();
+function applyStatic(){ trEls.forEach(r => { const s = T(r.fr); if(r.attr) r.el.setAttribute(r.attr, s); else r.el.innerHTML = s; }); }
+setLangData(); applyStatic();
+let i18nReady = false;
+function setLang(l){
+  if(!LANGS.includes(l)) return;
+  lang = l;
+  try{ localStorage.setItem("dayguess.lang", l); }catch(e){}
+  setLangData(); applyStatic();
+  if(i18nReady) refreshAll();
+}
+// Calendrier grégorien proleptique (celui de JavaScript) : aussi appliqué avant 1582,
+// sans le passage julien → grégorien.
+const RANGES = {
+  modern: {from:[1900,0,1], to:[2100,11,31], label:"1900 – 2100"},
+  full:   {from:[1,0,1],    to:[3000,11,31], label:"0001 – 3000"}
+};
+let range = "modern";
+const MEM_MS = 4000;
+
+let count = 20, items = [], active = 0, running = false, t0 = 0, tEnd = 0, tick = null, memTimer = null, lastResult = null;
+
+const $ = id => document.getElementById(id);
+
+// Date.UTC interprète les années 0–99 comme 1900–1999 → passer par setUTCFullYear.
+function utc(y,m,d){ const t = new Date(Date.UTC(2000,0,1)); t.setUTCFullYear(y,m,d); return t.getTime(); }
+function randomDate(){
+  const r = RANGES[range];
+  const a = utc(...r.from), b = utc(...r.to);
+  const days = Math.round((b-a)/86400000);
+  return new Date(a + Math.floor(Math.random()*(days+1))*86400000);
+}
+function weekdayIdx(d){ return (d.getUTCDay()+6)%7; } // lundi = 0
+function fmtDate(d){
+  const p = n => String(n).padStart(2,"0");
+  return p(d.getUTCDate())+"."+p(d.getUTCMonth()+1)+"."+String(d.getUTCFullYear()).padStart(4,"0");
+}
+function fmtTime(ms){
+  const t = Math.floor(ms/100), m = Math.floor(t/600);   // dixièmes de seconde (pas d'arrondi à 60.0)
+  return m+":"+((t%600)/10).toFixed(1).padStart(4,"0");
+}
+
+// Formule du fichier Excel (onglet « Test », G28) :
+// r = taux de réussite, t = secondes par bonne réponse
+function computeScore(r, t){
+  if(r<=0 || !isFinite(t)) return 0;
+  const s = (38*r)/(1+Math.pow(1.07, t-6.85)) - 15*Math.exp(1/(5+t*r)) + 15;
+  return Math.max(0, Math.min(20, s));
+}
+
+function buildDays(){
+  $("days").innerHTML = DAYS.map((d,i)=>`<button data-i="${i}"><span class="long">${d}</span><span class="short">${DAYS_SHORT[i]}</span><small>${i+1}</small></button>`).join("");
+  $("days").querySelectorAll("button").forEach(b => b.onclick = () => answer(+b.dataset.i));
+}
+
+function render(){
+  $("list").classList.toggle("big", count===1 || isComp());
+  syncTheme();
+  $("list").innerHTML = items.map((it,i)=>{
+    const cls = ["item"];
+    if(it.answer!=null) cls.push(it.answer===it.correct ? "ok" : "ko");
+    if(running && i===active) cls.push("active");
+    const showDate = !it.masked || !running;
+    let a = "";
+    if(it.answer!=null){
+      a = DAYS[it.answer] + (it.answer===it.correct ? " ✓" : ` ✗ <br><small>${DAYS[it.correct]}</small>`);
+    }
+    return `<div class="${cls.join(" ")}" data-i="${i}"><span class="n">${i+1}</span><span class="d">${showDate?fmtDate(it.date):"••.••.••••"}</span><span class="a">${a}</span></div>`;
+  }).join("");
+  $("list").querySelectorAll(".item").forEach(el => el.onclick = () => { if(running){ setActive(+el.dataset.i); } });
+  const lockDays = !running || isBlocked() || (!isComp() && items[active] && items[active].answer!=null);
+  $("days").querySelectorAll("button").forEach(b => b.disabled = lockDays);
+}
+
+function setActive(i){
+  active = i;
+  scheduleMask();
+  render();
+  // Sur smartphone, la date active doit rester visible au-dessus de la barre des jours
+  const el = $("list").children[i];
+  if(el) el.scrollIntoView({block:"nearest", behavior:"smooth"});
+}
+
+function scheduleMask(){
+  clearTimeout(memTimer);
+  if(!$("memMode").checked || !running) return;
+  const it = items[active];
+  if(it.masked || it.answer!=null) return;
+  memTimer = setTimeout(()=>{ it.masked = true; render(); }, MEM_MS);
+}
+
+// Coût d'une partie : Zen/Flash 1 pt par date, Survie 5 pts, Sprint 15 pts
+function playCost(){ return mode==="streak" ? 5 : mode==="sprint" ? 15 : count; }
+function updateCost(){
+  const c = playCost();
+  $("costInfo").textContent = mode==="streak" ? T("Coût : 5 pts · Gain par date : 1 pt, 2 pts en moins de 5 s, 3 pts en moins de 3 s")
+    : mode==="sprint" ? T("Coût : 15 pts · Gain : 1 pt par bonne réponse")
+    : mode==="flash" ? T("Coût : {c} pts · Gain : 2 pts par bonne réponse",{c}) : T("Coût : {c} pts · Gain : 2 pts par bonne réponse",{c});
+}
+function start(){
+  if(isBlocked()){ toast(T("⛔ Encore bloqué : {t}",{t:blockLeftText()})); return; }
+  const cost = playCost();
+  if(profile.points < cost){ toast(T("Pas assez de points : il en faut {n}",{n:cost})); return; }
+  profile.points -= cost; profile.playCost = (profile.playCost||0)+cost; saveProfile(); updatePts();
+  rateReset();
+  stopKey = !isComp() ? "Terminer" : "Abandonner"; $("stopBtn").textContent = T(stopKey);
+  $("compInfo").classList.toggle("hidden", !isComp());
+  $("bar").classList.toggle("hidden", !isComp());
+  $("timer").classList.remove("low");
+  if(isComp()){ startComp(); return; }
+  items = Array.from({length:count}, () => { const d = randomDate(); return {date:d, correct:weekdayIdx(d), answer:null, masked:false}; });
+  active = 0; running = true; lastResult = null;
+  t0 = performance.now();
+  clearInterval(tick);
+  tick = setInterval(()=>{ $("timer").textContent = fmtTime(performance.now()-t0); }, 100);
+  $("playCard").classList.remove("hidden");
+  $("resultCard").classList.add("hidden");
+  startKey = "Recommencer"; $("startBtn").textContent = T(startKey);
+  $("stopBtn").classList.remove("hidden");
+  lockSettings(true);
+  scheduleMask();
+  render();
+  items.forEach(noteDate);
+}
+
+function answer(i){
+  if(!running) return;
+  if(!isComp() && items[active].answer!=null) return;   // une réponse donnée ne peut plus être changée
+  if(guardRate()) return;                               // anti-spam
+  if(isComp()){ answerComp(i); return; }
+  items[active].first = i;
+  items[active].answer = i;
+  if(mode==="flash"){ flashRun = (i===items[active].correct) ? flashRun+1 : 0; if(flashRun>=5) awardTrophy("elephant"); }
+  if($("memMode").checked) items[active].masked = true;
+  const next = items.findIndex((it,k)=>k>active && it.answer==null);
+  const any = next>=0 ? next : items.findIndex(it=>it.answer==null);
+  if(any<0){ finish(); return; }
+  setActive(any);
+}
+
+function finish(){
+  if(!running) return;
+  if(isComp()){ endComp("quit"); return; }
+  resultKind = "zen"; applyResultLabels();
+  running = false;
+  tEnd = performance.now();
+  clearInterval(tick); clearTimeout(memTimer);
+  const total = tEnd - t0;
+  $("timer").textContent = fmtTime(total);
+  const answered = items.filter(it=>it.answer!=null);
+  const okN = answered.filter(it=>it.answer===it.correct).length;
+  // Comme l'Excel : taux = bonnes / (bonnes + fausses), les dates sans réponse ne comptent pas
+  const rate = answered.length ? okN/answered.length : 0;
+  const per = okN ? total/1000/okN : Infinity;
+  const score = computeScore(rate, per);
+  lastResult = {score, rate, per, total, n:count, mem:$("memMode").checked, range, ok:okN, answered:answered.length, mode};
+  $("rScore").textContent = score.toFixed(2);
+  $("rRate").textContent = Math.round(rate*100)+" %";
+  $("rTime").textContent = fmtTime(total);
+  $("rPer").textContent = isFinite(per) ? per.toFixed(1)+" s" : "–";
+  $("resultCard").classList.remove("hidden");
+  $("saveRow").classList.toggle("hidden", okN===0);
+  const gain = 2 * items.filter(it => it.first!=null && it.first===it.correct).length;
+  addPoints(gain); showGain(gain); checkSpeedZen(per);
+  checkPerfect();
+  if(answered.length){ touchFlame(); checkClock(); }
+  flushTrophies();
+  $("saveBtn").disabled = false; setSave("Enregistrer le score");
+  $("stopBtn").classList.add("hidden");
+  lockSettings(false);
+  render();
+  $("nameInput").value = loadName();
+}
+
+function lockSettings(lock){
+  $("countSeg").querySelectorAll("button").forEach(b=>b.disabled=lock);
+  $("rangeSeg").querySelectorAll("button").forEach(b=>b.disabled=lock);
+  $("memMode").disabled = lock;
+  $("modeSeg").querySelectorAll("button").forEach(b=>b.disabled=lock);
+  $("limitIn").disabled = lock;
+  $("limitSeg").querySelectorAll("button").forEach(b=>b.disabled=lock);
+}
+
+// ---- Meilleurs scores (stockés dans ce navigateur, un tableau par nombre de dates / mode) ----
+function hsKey(n, mem, rg){ return "dayguess.hs."+n+(mem?".mem":"")+(rg==="full"?".full":""); }
+function loadHs(n, mem, rg){ try{ return JSON.parse(localStorage.getItem(hsKey(n,mem,rg))) || []; }catch(e){ return []; } }
+function saveHs(n, mem, rg, list){ try{ localStorage.setItem(hsKey(n,mem,rg), JSON.stringify(list)); }catch(e){} }
+function loadName(){ try{ return localStorage.getItem("dayguess.name") || ""; }catch(e){ return ""; } }
+function saveName(v){ try{ localStorage.setItem("dayguess.name", v); }catch(e){} }
+
+function renderHs(){
+  const mem = $("memMode").checked;
+  $("hsLabel").textContent = hsTitle()+" · "+RANGES[range].label;
+  const list = loadHs(hsId(), mem, range);
+  $("hsBody").innerHTML = list.length ? list.map((h,i)=>`<tr><td>${i+1}</td><td><strong>${fmtScore(h.score)}</strong></td><td>${escHtml(h.name)}</td><td class="hide-sm">${h.date}</td><td>${h.rate==null ? "–" : Math.round(h.rate*100)+" %"}</td><td>${h.per==null ? "–" : h.per.toFixed(1)+" s"}</td></tr>`).join("")
+    : `<tr><td colspan="6" style="color:var(--soft)">${T("Aucun score pour l'instant.")}</td></tr>`;
+}
+function escHtml(s){ return String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+$("saveBtn").onclick = () => {
+  if(!lastResult) return;
+  const name = $("nameInput").value.trim() || T("Anonyme");
+  saveName(name);
+  const list = loadHs(lastResult.n, lastResult.mem, lastResult.range);
+  list.push({score:lastResult.score, name, date:new Date().toLocaleDateString("fr-CH"), rate:lastResult.rate, per:lastResult.per});
+  list.sort((a,b)=>b.score-a.score);
+  saveHs(lastResult.n, lastResult.mem, lastResult.range, list.slice(0,10));
+  countSaved(lastResult.mode);
+  $("saveBtn").disabled = true; setSave("Enregistré");
+  renderHs();
+};
+
+$("countSeg").querySelectorAll("button").forEach(b => b.onclick = () => {
+  count = +b.dataset.n;
+  $("countSeg").querySelectorAll("button").forEach(x=>x.classList.toggle("on", x===b));
+  renderHs();
+  updateCost();
+});
+$("rangeSeg").querySelectorAll("button").forEach(b => b.onclick = () => {
+  range = b.dataset.r;
+  $("rangeSeg").querySelectorAll("button").forEach(x=>x.classList.toggle("on", x===b));
+  renderHs();
+});
+$("memMode").onchange = renderHs;
+$("startBtn").onclick = start;
+$("stopBtn").onclick = finish;
+
+document.addEventListener("keydown", e => {
+  if(tab!=="game") return;
+  if(e.target.tagName==="INPUT" && e.target.type!=="checkbox") return;
+  if(!running){
+    if(e.key==="Enter"){ e.preventDefault(); start(); }
+    return;
+  }
+  if(/^[1-7]$/.test(e.key)){ e.preventDefault(); answer(+e.key-1); }
+  else if(e.key==="ArrowDown"){ e.preventDefault(); setActive(Math.min(items.length-1, active+1)); }
+  else if(e.key==="ArrowUp"){ e.preventDefault(); setActive(Math.max(0, active-1)); }
+});
+
+
+// ---- Onglets Jeu / Théorie ----
+const MONTH_CODE = [0,3,3,6,1,4,6,2,5,0,3,5];
+let tab = "game";
+function showTab(t){
+  tab = t;
+  ["Game","Theory","Shop","Trophy"].forEach(k => $("tab"+k).classList.toggle("hidden", k.toLowerCase()!==t));
+  document.querySelectorAll(".tab").forEach(b => b.classList.toggle("on", b.dataset.tab===t));
+  if(t==="shop") renderShop();
+  if(t==="trophy") renderTrophies();
+  window.scrollTo(0,0);
+}
+function isLeap(y){ return y%4===0 && (y%100!==0 || y%400===0); }
+function centuryCode(y){ return [6,4,2,0][Math.floor(y/100)%4]; }
+function chip(label, v){ return `<div class="chip">${label}<b>${v}</b></div>`; }
+
+function renderCalc(){
+  const d = +$("thD").value, m = +$("thM").value, y = +$("thY").value, out = $("thOut");
+  if(!d || !m || !y){ out.textContent = ""; return; }
+  const dim = [31, isLeap(y)?29:28, 31,30,31,30,31,31,30,31,30,31];
+  if(m<1 || m>12 || y<1 || y>3000 || d<1 || d>dim[m-1]){ out.textContent = T("Date invalide."); return; }
+  const M = MONTH_CODE[m-1], S = centuryCode(y), yy = y%100, A = (yy+Math.floor(yy/4))%7, B = (isLeap(y) && m<=2) ? 1 : 0;
+  const tot = d+M+A+S-B, r = ((tot%7)+7)%7;
+  const ok = ((new Date(utc(y,m-1,d))).getUTCDay() === r);
+  out.innerHTML =
+    `J = ${d} → <b>${d%7}</b><br>` +
+    `M (${MONTHS[m-1]}) = <b>${M}</b><br>` +
+    `S (${Math.floor(y/100)*100}–${Math.floor(y/100)*100+99}) = <b>${S}</b><br>` +
+    T("A : {e}",{e:`${yy} + ${Math.floor(yy/4)} = ${yy+Math.floor(yy/4)} → <b>${A}</b>`}) + "<br>" +
+    T("B : {e}",{e:`${isLeap(y) ? T("année bissextile") : T("année non bissextile")}${isLeap(y) && m>2 ? T(", mais après février") : ""} → <b>${B}</b>`}) + "<br>" +
+    T("Total : {e}",{e:`${d} + ${M} + ${A} + ${S} − ${B} = ${tot} → ${tot} mod 7 = <b>${r}</b>`}) + "<br>" +
+    `<span class="res">${DAYS_SUN0[r]}</span>${ok ? " ✓" : ""}`;
+}
+
+const qz = {kind:"month", ans:null, ok:0, n:0};
+function qzNext(){
+  const k = qz.kind;
+  if(k==="month"){ qz.p = Math.floor(Math.random()*12); qz.ans = MONTH_CODE[qz.p]; }
+  else if(k==="century"){ qz.p = 16+Math.floor(Math.random()*9); qz.ans = centuryCode(qz.p*100); }
+  else { qz.p = Math.floor(Math.random()*100); qz.ans = (qz.p+Math.floor(qz.p/4))%7; }
+  qzRender();
+}
+function qzRender(){
+  const k = qz.kind, p = qz.p;
+  if(p==null) return;
+  $("thQ").innerHTML = k==="month" ? T("Code du mois de <b>{m}</b> ?",{m:MONTHS[p]})
+    : k==="century" ? T("Code du siècle <b>{c}00 – {c}99</b> ?",{c:p})
+    : T("Code de l'année <b>{y}</b> (yy + yy ÷ 4, modulo 7) ?",{y:String(p).padStart(2,"0")});
+  $("thScore").textContent = qz.n ? T("{ok} / {n} bonnes réponses",{ok:qz.ok,n:qz.n}) : "";
+}
+function qzAnswer(v){
+  if(qz.ans===null) return;
+  qz.n++;
+  if(v===qz.ans){ qz.ok++; $("thFb").textContent = T("✓ Juste"); }
+  else $("thFb").textContent = T("✗ C'était {a}",{a:qz.ans});
+  qzNext();
+}
+
+function initTheory(){
+  renderTheoryLists();
+  $("thBtns").innerHTML = [0,1,2,3,4,5,6].map(i=>`<button data-v="${i}">${i}</button>`).join("");
+  $("thBtns").querySelectorAll("button").forEach(b => b.onclick = () => qzAnswer(+b.dataset.v));
+  $("thKind").querySelectorAll("button").forEach(b => b.onclick = () => {
+    qz.kind = b.dataset.k; qz.ok = 0; qz.n = 0; $("thFb").textContent = "";
+    $("thKind").querySelectorAll("button").forEach(x => x.classList.toggle("on", x===b));
+    qzNext();
+  });
+  const now = new Date();
+  $("thD").value = now.getDate(); $("thM").value = now.getMonth()+1; $("thY").value = now.getFullYear();
+  ["thD","thM","thY"].forEach(id => $(id).oninput = renderCalc);
+  document.querySelectorAll(".tab").forEach(b => b.onclick = () => showTab(b.dataset.tab));
+  renderCalc(); qzNext();
+}
+
+
+
+
+// ---- Points, boutique, trophées ----
+// prix : voir MODE_PRICE / BG_PRICE
+const NAMES = {classic:"Zen", streak:"Survie", sprint:"Sprint", flash:"Flash"};
+const MODE_PRICE = 500, BG_PRICE = 100, CRESUS = {silver:{price:1991, ico:"🥈", label:"argent"}, gold:{price:3001, ico:"🥇", label:"or"}};
+const BGS = [
+  {id:"bg_classic",     group:"classic", modes:["classic"], ico:"☯️", name:"Yin-yang",           tone:"light", fn:sceneZen,    desc:"Un yin-yang apaisant qui tourne lentement."},
+  {id:"bg_zen_garden",  group:"classic", modes:["classic"], ico:"🌸", name:"Jardin japonais",    tone:"light", fn:sceneGarden, desc:"Mont Fuji, torii et cerisier en fleurs."},
+  {id:"bg_zen_moon",    group:"classic", modes:["classic"], ico:"🎋", name:"Bambous et lune",    tone:"night", fn:sceneBamboo, desc:"Forêt de bambous sous la pleine lune."},
+  {id:"bg_streak",      group:"streak",  modes:["streak"],  ico:"🌋", name:"Volcan",             tone:"dark",  fn:sceneFire,   desc:"Volcan, flammes et braises."},
+  {id:"bg_surv_island", group:"streak",  modes:["streak"],  ico:"🏝️", name:"Île déserte",        tone:"night", fn:sceneIsland, desc:"Naufragé autour d'un feu de camp."},
+  {id:"bg_surv_ice",    group:"streak",  modes:["streak"],  ico:"🐧", name:"Banquise",           tone:"light", fn:sceneIce,    desc:"Icebergs, aurore boréale et manchot."},
+  {id:"bg_sprint",      group:"sprint",  modes:["sprint"],  ico:"⏲️", name:"Chronomètre",        tone:"light", fn:sceneChrono, desc:"Un chronomètre géant dont la trotteuse tourne."},
+  {id:"bg_sprint_track",group:"sprint",  modes:["sprint"],  ico:"🏃", name:"Piste d'athlétisme", tone:"light", fn:sceneTrack,  desc:"Couloirs, stade et ligne d'arrivée."},
+  {id:"bg_sprint_neon", group:"sprint",  modes:["sprint"],  ico:"🌆", name:"Vitesse néon",       tone:"night", fn:sceneNeon,   desc:"Autoroute néon et soleil rétro."},
+  {id:"bg_spring",      group:"season",  modes:["classic","streak","sprint"], ico:"🌷", name:"Printemps", tone:"light", fn:sceneSpring, desc:"Prairie fleurie sous le soleil."},
+  {id:"bg_summer",      group:"season",  modes:["classic","streak","sprint"], ico:"☀️", name:"Été",       tone:"light", fn:sceneSummer, desc:"Plage, mer et parasol."},
+  {id:"bg_autumn",      group:"season",  modes:["classic","streak","sprint"], ico:"🍂", name:"Automne",   tone:"light", fn:sceneAutumn, desc:"Arbres roux et feuilles qui tombent."},
+  {id:"bg_winter",      group:"season",  modes:["classic","streak","sprint"], ico:"⛄", name:"Hiver",     tone:"light", fn:sceneWinter, desc:"Sapins enneigés et bonhomme de neige."}
+];
+const SHOP = [
+  {id:"mode_streak", group:"mode", ico:"🔥", name:"Mode Survie", price:MODE_PRICE, desc:"Une date à la fois, un chrono par date, jusqu'à la première erreur."},
+  {id:"mode_sprint", group:"mode", ico:"⏱️", name:"Mode Sprint", price:MODE_PRICE, desc:"5 minutes pour trouver un maximum de dates, fautes permises."},
+  {id:"mode_flash",  group:"mode", ico:"⚡", name:"Mode Flash",  price:MODE_PRICE, desc:"La date disparaît après 4 s : écran blanc, puis tout noir."}
+].concat(BGS.map(b => ({id:b.id, group:b.group, ico:b.ico, name:b.name, price:BG_PRICE, desc:b.desc})));
+const TROPHIES = [
+  {id:"own_mode_streak", ico:"🔥", name:"Survivant", how:"Débloquer le mode Survie"},
+  {id:"own_mode_sprint", ico:"⏱️", name:"Sprinteur", how:"Débloquer le mode Sprint"},
+  {id:"own_mode_flash",  ico:"⚡", name:"Éclair", how:"Débloquer le mode Flash"},
+  {id:"own_bg_classic",  ico:"☯️", name:"Équilibre", how:"Débloquer le décor Zen"},
+  {id:"own_bg_streak",   ico:"🌋", name:"Volcanologue", how:"Débloquer le décor Survie"},
+  {id:"own_bg_sprint",   ico:"⏲️", name:"Maître du temps", how:"Débloquer le décor Sprint"},
+  {id:"t100",            ico:"💯", name:"100 %", how:"Remplir chaque tableau de scores (10 scores) : Zen et Flash (1/3/5/20 dates), Survie (5/10/20 s), Sprint, chacun pour les 2 périodes"},
+  {id:"speed_classic_1",  ico:"🏎️", name:"Speed Zen 1", how:"Zen, 1 date : juste, en 10 s ou moins"},
+  {id:"speed_classic_3",  ico:"🏎️", name:"Speed Zen 3", how:"Zen, 3 dates : 100 % de justes, 10 s ou moins par réponse en moyenne"},
+  {id:"speed_classic_5",  ico:"🏎️", name:"Speed Zen 5", how:"Zen, 5 dates : 100 % de justes, 10 s ou moins par réponse en moyenne"},
+  {id:"speed_classic_20", ico:"🏎️", name:"Speed Zen 20", how:"Zen, 20 dates : 100 % de justes, 10 s ou moins par réponse en moyenne"},
+  {id:"speed_streak",     ico:"🏎️", name:"Speed Survie", how:"Survie : au moins 5 bonnes réponses de suite, 10 s ou moins par réponse en moyenne"},
+  {id:"speed_sprint",     ico:"🏎️", name:"Speed Sprint", how:"Sprint : au moins 30 bonnes réponses en 5 minutes (6 par minute)"},
+  {id:"cheater", ico:"🕵️", name:"Tricheur", how:"Avoir été bloqué 5 minutes pour avoir répondu trop vite", secret:true},
+  {id:"flawless",     ico:"🎯", name:"Sans faute", how:"Zen, 20 dates : 20/20 du premier coup", secret:true},
+  {id:"coolhead",     ico:"🧊", name:"Sang-froid", how:"Survie : réussir une date avec moins d'une seconde restante", secret:true},
+  {id:"machine",      ico:"🦾", name:"Machine", how:"Survie : 20 bonnes réponses de suite", secret:true},
+  {id:"hyper",        ico:"🚀", name:"Hypersonique", how:"Sprint : 60 bonnes réponses en 5 minutes", secret:true},
+  {id:"timetraveler", ico:"🌌", name:"Voyageur du temps", how:"Partie parfaite (au moins 3 dates, Zen ou Flash) sur la période 0001 – 3000", secret:true},
+  {id:"elephant",     ico:"🧠", name:"Mémoire d'éléphant", how:"Flash : 5 dates de suite justes", secret:true},
+  {id:"blaze7",       ico:"🔥", name:"Brasier", how:"Flamme de 7 jours de suite", secret:true},
+  {id:"blaze30",      ico:"☄️", name:"Brasier éternel", how:"Flamme de 30 jours de suite", secret:true},
+  {id:"early",        ico:"🦅", name:"Lève-tôt", how:"Terminer une partie entre 4 h et 6 h du matin", secret:true},
+  {id:"night",        ico:"🦉", name:"Oiseau de nuit", how:"Terminer une partie entre minuit et 4 h du matin", secret:true},
+  {id:"phoenix",      ico:"🐦", name:"Phénix", how:"Rallumer une flamme éteinte, puis la mener à 7 jours de plus", secret:true},
+  {id:"lucky",        ico:"🍀", name:"Chanceux", how:"Tomber sur un vendredi 13", secret:true},
+  {id:"birthday",     ico:"🎂", name:"Joyeux anniversaire", how:"Tomber sur la date du jour (jour et mois d'aujourd'hui)", secret:true},
+  {id:"thrifty",      ico:"💰", name:"Économe", how:"Gagner 500 points en jouant sans rien dépenser", secret:true},
+  {id:"collector",    ico:"🛍️", name:"Collectionneur", how:"Tout débloquer dans la boutique (modes et décors)", secret:true},
+  ...BGS.filter(b => !["bg_classic","bg_streak","bg_sprint"].includes(b.id)).map(b => ({id:"own_"+b.id, ico:b.ico, name:b.name, how:"Débloquer le décor « {name} »", vars:{name:b.name}})),
+  {id:"fibonacci", ico:"🐚", name:"Fibonacci", how:"Utiliser toute la suite de codes Fibonacci", secret:true},
+  {id:"cresus", ico:"🤑", name:"Crésus", how:"À acheter : version argentée (1991 pts) et version dorée (3001 pts)"},
+  {id:"legend", ico:"👑", name:"Légende", how:"Gagner tous les trophées"}
+];
+function loadProfile(){
+  const base = {points:0, owned:{}, trophies:{}, saved:{}, cres:{}, flame:null, strikes:0, strikeAt:0, blockUntil:0, bgChoice:{}, earned:0, spent:0, codes:{}};
+  try{ const p = JSON.parse(localStorage.getItem("dayguess.profile")); if(p && typeof p==="object") return Object.assign(base, p); }catch(e){}
+  return base;
+}
+let profile = loadProfile();
+profile.cres = profile.cres || {}; if(profile.cresus) profile.cres[profile.cresus] = true;
+if(profile.codes && profile.codes.picsou && !profile.picsou) profile.picsou = 1;   // ancien profil : 1er code déjà utilisé   // ancien profil : une seule version
+function saveProfile(){ try{ localStorage.setItem("dayguess.profile", JSON.stringify(profile)); }catch(e){} }
+function modeOwned(m){ return m==="classic" || !!profile.owned["mode_"+m]; }
+function bgOwned(m){ return !!profile.owned["bg_"+m]; }
+function updatePts(){ $("pts").textContent = T("⭐ {n} pts",{n:profile.points}); $("pts").title = T("Boutique"); }
+function addPoints(n){
+  if(!n) return;
+  profile.points += n; profile.earned = (profile.earned||0)+n;
+  saveProfile(); updatePts();
+  if(profile.earned>=500 && !profile.spent) awardTrophy("thrifty");   // 500 points gagnés en jouant, rien dépensé
+}
+function showGain(n){ gainN = n; $("gain").textContent = n ? T(n>1 ? "+{n} points ⭐" : "+{n} point ⭐", {n}) : ""; }
+let toastTimer = null;
+function toast(msg){
+  let el = $("toast");
+  if(!el){ el = document.createElement("div"); el.id = "toast"; el.className = "toast"; document.body.appendChild(el); }
+  el.textContent = msg; el.style.display = "block";
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { el.style.display = "none"; }, 3500);
+}
+const trophyQueue = []; let trophyShowing = false;
+function awardTrophy(id){
+  if(profile.trophies[id]) return;
+  const t = TROPHIES.find(x => x.id===id); if(!t) return;
+  profile.trophies[id] = new Date().toLocaleDateString("fr-CH");
+  saveProfile();
+  trophyQueue.push(t);
+  renderTrophies();
+  flushTrophies();   // pendant une partie, l'affichage attend la fin de la partie
+  if(id!=="legend") checkLegend();
+}
+function checkLegend(){ if(!profile.trophies.legend && profile.cres.silver && profile.cres.gold && TROPHIES.every(t => t.id==="legend" || profile.trophies[t.id])) awardTrophy("legend"); }
+let hintQueued = false;
+function isFibNum(n){ for(let k=1; fib(k) <= n; k++) if(fib(k)===n) return true; return false; }
+function showHint(){
+  hintQueued = false; trophyShowing = true;
+  $("hintCap").textContent = T("Indice");
+  const o = $("hintOverlay"); o.classList.remove("hidden");
+  let done = false;
+  const close = () => { if(done) return; done = true; o.classList.add("hidden"); trophyShowing = false; flushTrophies(); };
+  o.onclick = close; setTimeout(close, 5000);
+}
+function flushTrophies(){
+  if(running || trophyShowing) return;
+  if(!trophyQueue.length){ if(hintQueued) showHint(); return; }
+  const t = trophyQueue.shift(); trophyShowing = true;
+  $("toIco").textContent = t.ico; $("toName").textContent = tName(t); $("toHow").textContent = tHow(t);
+  $("trophyOverlay").classList.remove("hidden");
+  setTimeout(() => { $("trophyOverlay").classList.add("hidden"); trophyShowing = false; flushTrophies(); }, 3000);
+}
+function checkSpeedZen(per){   // Zen : 1/3/5/20 dates, toutes justes du premier coup, moyenne ≤ 10 s
+  if(mode!=="classic" || ![1,3,5,20].includes(count)) return;
+  const perfect = items.length===count && items.every(it => it.first!=null && it.first===it.correct);
+  if(perfect && per<=10) awardTrophy("speed_classic_"+count);
+}
+function checkSpeedComp(ok){
+  if(mode==="sprint" && ok>=30) awardTrophy("speed_sprint");
+  if(mode==="sprint" && ok>=60) awardTrophy("hyper");
+  if(mode==="streak" && ok>=5 && comp.sumOk/ok/1000<=10) awardTrophy("speed_streak");
+}
+// Trophée 100 % : chaque tableau de scores ci-dessous doit contenir 10 scores.
+const REQ_COUNTS = [1,3,5,20], REQ_LIMITS = [5,10,20];
+function requiredTables(){
+  const T = {classic:[], streak:[], sprint:[], flash:[]};
+  for(const rg of ["modern","full"]){
+    REQ_COUNTS.forEach(n => { T.classic.push([n,false,rg]); T.flash.push([n,true,rg]); });
+    REQ_LIMITS.forEach(s => T.streak.push(["s"+s,false,rg]));
+    T.sprint.push(["m5",false,rg]);
+  }
+  return T;
+}
+function tablesProgress(){
+  const T = requiredTables(), out = {};
+  for(const m in T) out[m] = {done:T[m].filter(([n,mem,rg]) => loadHs(n,mem,rg).length>=10).length, total:T[m].length};
+  return out;
+}
+function countSaved(){
+  const p = tablesProgress();
+  if(Object.keys(p).every(m => p[m].done===p[m].total)) awardTrophy("t100");
+  renderTrophies();
+}
+function buy(id){
+  const it = SHOP.find(x => x.id===id);
+  if(!it || profile.owned[id] || profile.points < it.price) return;
+  profile.points -= it.price; profile.spent = (profile.spent||0)+it.price; profile.owned[id] = true;
+  const b = BGS.find(x => x.id===id);
+  if(b) b.modes.forEach(m => { if(!profile.bgChoice[m] || b.group!=="season") profile.bgChoice[m] = id; });   // un décor de mode acheté est choisi d'office ; une saison seulement si rien n'est choisi
+  saveProfile(); updatePts();
+  awardTrophy("own_"+id);
+  if(SHOP.every(x => profile.owned[x.id])) awardTrophy("collector");
+  renderShop(); applyMode();
+}
+function lockedHint(m){ toast(T("🔒 Mode {m} verrouillé : {p} points dans la boutique",{m:T(NAMES[m]),p:MODE_PRICE})); showTab("shop"); }
+function seasonNow(){ const m = new Date().getMonth(); return m>=2 && m<=4 ? "bg_spring" : m>=5 && m<=7 ? "bg_summer" : m>=8 && m<=10 ? "bg_autumn" : "bg_winter"; }
+function shopRow(it){
+  const own = !!profile.owned[it.id];
+  const right = own ? `<span class="own">${T("Débloqué ✓")}</span>`
+    : `<button class="btn btn-primary" data-id="${it.id}" ${profile.points<it.price ? "disabled" : ""}>${T("{n} pts",{n:it.price})}</button>`;
+  const now = it.id===seasonNow() ? ` <span class="own">${T("(saison actuelle)")}</span>` : "";
+  return `<div class="shop-item"><span class="ico">${it.ico}</span><div class="t"><b>${T(it.name)}${now}</b><small>${T(it.desc)}</small></div>${right}</div>`;
+}
+function renderShop(){
+  $("shopBal").textContent = T("Solde : ⭐ {n} pts",{n:profile.points});
+  renderFlameBox();
+  const groups = [["Modes de jeu ({p} pts)","mode",MODE_PRICE], ["Décors Zen ({p} pts)","classic",BG_PRICE], ["Décors Survie ({p} pts)","streak",BG_PRICE], ["Décors Sprint ({p} pts)","sprint",BG_PRICE], ["Décors des saisons ({p} pts)","season",BG_PRICE]];
+  $("shopList").innerHTML = groups.map(([title, g, p]) => `<h3 class="shop-h">${T(title,{p})}</h3>` + SHOP.filter(it => it.group===g).map(shopRow).join("")).join("");
+  $("shopList").querySelectorAll("button[data-id]").forEach(b => b.onclick = () => buy(b.dataset.id));
+}
+function cresusCard(t){
+  const c = profile.cres || {}, top = c.gold ? "gold" : c.silver ? "silver" : null;
+  const cls = top ? "tro got "+top : "tro";
+  const dis = k => (profile.points<CRESUS[k].price || c[k]) ? "disabled" : "";
+  const have = ["silver","gold"].filter(k => c[k]);
+  const got = top ? "<br>"+T("Obtenu le {d} ({l})",{d:profile.trophies.cresus, l:have.map(k => T(CRESUS[k].label)).join(" + ")}) : "";
+  const lbl = k => CRESUS[k].ico+" "+(c[k] ? "✓" : CRESUS[k].price);
+  return `<div class="${cls}"><div class="ico">🤑${have.map(k => CRESUS[k].ico).join("")}</div><b>${tName(t)}</b><small>${tHow(t)}${got}</small>`
+    + `<div class="row" style="justify-content:center;gap:6px;margin-top:8px;">`
+    + `<button class="btn btn-primary" data-cres="silver" ${dis("silver")}>${lbl("silver")}</button>`
+    + `<button class="btn btn-primary" data-cres="gold" ${dis("gold")}>${lbl("gold")}</button></div></div>`;
+}
+function buyCresus(k){
+  const c = CRESUS[k];
+  if(!c || profile.points<c.price || profile.cres[k]) return;
+  profile.points -= c.price; profile.spent = (profile.spent||0)+c.price; profile.cres[k] = true; profile.cresus = k;
+  if(!profile.trophies.cresus) profile.trophies.cresus = new Date().toLocaleDateString("fr-CH");
+  saveProfile(); updatePts();
+  trophyQueue.push({ico:"🤑"+c.ico, name:"Crésus d'"+c.label, how:"Trophée acheté pour {n} pts", vars:{n:c.price}});
+  renderTrophies(); flushTrophies(); checkLegend();
+  if($("tabShop") && !$("tabShop").classList.contains("hidden")) renderShop();
+}
+function renderTrophies(){
+  const vis = TROPHIES.filter(t => !t.secret || profile.trophies[t.id]);   // les trophées secrets n'apparaissent qu'une fois obtenus
+  const got = vis.filter(t => profile.trophies[t.id]).length;
+  $("troCount").textContent = got+" / "+vis.length;
+  $("troGrid").innerHTML = vis.map(t => {
+    if(t.id==="cresus") return cresusCard(t);
+    const d = profile.trophies[t.id];
+    return d ? `<div class="tro got"><div class="ico">${t.ico}</div><b>${tName(t)}</b><small>${tHow(t)}<br>${T("Obtenu le {d}",{d})}</small></div>`
+             : `<div class="tro lock"><div class="ico">🔒</div><b>${tName(t)}</b><small>${tHow(t)}</small></div>`;
+  }).join("");
+  $("troGrid").querySelectorAll("button[data-cres]").forEach(b => b.onclick = () => buyCresus(b.dataset.cres));
+  const pr = tablesProgress();
+  $("troProg").textContent = T("Tableaux de scores complets (10 scores chacun) pour le 100 % : ") + Object.keys(NAMES).map(k => T(NAMES[k])+" "+pr[k].done+"/"+pr[k].total).join(" · ");
+}
+
+// ---- Flamme (série de jours joués) ----
+function dayKey(d){ d = d || new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function dayDiff(a, b){
+  const pa = a.split("-").map(Number), pb = b.split("-").map(Number);
+  return Math.round((Date.UTC(pb[0],pb[1]-1,pb[2]) - Date.UTC(pa[0],pa[1]-1,pa[2]))/86400000);
+}
+function flameState(){
+  const f = profile.flame;
+  if(!f || !f.count || !f.last) return {st:"off", count:0};
+  const d = dayDiff(f.last, dayKey());
+  if(d<=0) return {st:"lit", count:f.count, today:true};
+  if(d===1) return {st:"lit", count:f.count, today:false};
+  if(d===2) return {st:"out", count:f.count};    // un jour manqué : on peut la rallumer
+  return {st:"lost", count:0};                   // plus d'un jour manqué : série perdue
+}
+function touchFlame(){                           // appelé à la fin d'une partie jouée
+  const f = profile.flame || (profile.flame = {count:0, last:"", best:0});
+  const st = flameState();
+  if(st.st==="lit" && st.today) return;
+  f.count = st.st==="lit" ? f.count+1 : 1;       // jour manqué non rallumé : la série repart de 1
+  f.last = dayKey(); f.best = Math.max(f.best||0, f.count);
+  if(f.count===1) delete profile.phoenix;      // série repartie de 1 : défi Phénix perdu
+  saveProfile(); updateFlame();
+  if(profile.phoenix && f.count>=profile.phoenix){ delete profile.phoenix; awardTrophy("phoenix"); }
+  if(isFibNum(f.count) && !profile.trophies.fibonacci) hintQueued = true;   // jours 1, 2, 3, 5, 8, 13… : indice Picsou
+  if(f.count>=7) awardTrophy("blaze7");
+  if(f.count>=30) awardTrophy("blaze30");
+}
+function updateFlame(){
+  const f = flameState(), el = $("flameChip");
+  el.textContent = (f.st==="out" ? "💨 " : "🔥 ")+f.count;
+  el.style.opacity = f.st==="lit" ? (f.today ? "1" : ".8") : ".55";
+  el.title = f.st==="out" ? T("Flamme éteinte : rallume-la dans la boutique (10 pts)") : f.st==="lit" && !f.today ? T("Joue aujourd'hui pour garder ta série") : T("Série de jours joués");
+}
+function relight(){
+  if(flameState().st!=="out" || profile.points<10) return;
+  profile.points -= 10; profile.spent = (profile.spent||0)+10;
+  profile.phoenix = profile.flame.count + 7;      // défi Phénix : 7 jours de plus
+  const y = new Date(); y.setDate(y.getDate()-1);
+  profile.flame.last = dayKey(y);                // comme si le jour manqué avait été joué
+  saveProfile(); updatePts(); updateFlame(); renderShop();
+  toast(T("🔥 Flamme rallumée !"));
+}
+function renderFlameBox(){
+  const f = flameState();
+  let msg, btn = "";
+  if(f.st==="lit") msg = f.today ? T("Tu as joué aujourd'hui : la flamme est allumée.") : T("Joue une partie aujourd'hui pour garder ta série.");
+  else if(f.st==="out"){ msg = T("Tu as manqué un jour ! Rallume la flamme avant de jouer, sinon ta série repart de 1."); btn = `<button class="btn btn-primary" id="relightBtn" ${profile.points<10 ? "disabled" : ""}>${T("Rallumer (10 pts)")}</button>`; }
+  else msg = T("Joue chaque jour pour allumer la flamme.");
+  $("flameBox").innerHTML = `<div class="shop-item"><span class="ico">${f.st==="out" ? "💨" : "🔥"}</span><div class="t"><b>${T(f.count>1 ? "Flamme : {n} jours de suite" : "Flamme : {n} jour de suite",{n:f.count})}</b><small>${msg}</small></div>${btn}</div>`;
+  const rb = $("relightBtn"); if(rb) rb.onclick = relight;
+}
+
+// ---- Anti-spam : 3 réponses de suite en moins de 0,5 s → blocage 3 s, puis 10 s, 60 s, 5 min (et 5 min ensuite) ----
+const rate = {last:0, fast:0};
+function rateReset(){ rate.last = performance.now(); rate.fast = 0; flashRun = 0; }
+function isBlocked(){ return Date.now() < (profile.blockUntil||0); }
+function blockLeftText(){ const s = Math.ceil(((profile.blockUntil||0)-Date.now())/1000); return Math.floor(s/60)+":"+String(s%60).padStart(2,"0"); }
+let blockTicker = null;
+function showBlock(){
+  const bar = $("blockBar");
+  if(!isBlocked()){ bar.classList.add("hidden"); clearInterval(blockTicker); blockTicker = null; rateReset(); render(); return; }
+  bar.classList.remove("hidden");
+  bar.textContent = T("⛔ Trop rapide ! Réponses bloquées : {t}",{t:blockLeftText()});
+  if(!blockTicker) blockTicker = setInterval(showBlock, 250);
+}
+function triggerBlock(){
+  const now = Date.now();
+  if(!profile.strikeAt || now - profile.strikeAt > 30*60*1000) profile.strikes = 0;   // 30 min sans récidive : compteur remis à 0
+  profile.strikes = (profile.strikes||0)+1; profile.strikeAt = now;
+  const sec = [3,10,60,300][Math.min(profile.strikes,4)-1];
+  profile.blockUntil = now + sec*1000;
+  saveProfile();
+  if(sec>=300) awardTrophy("cheater");           // trophée secret, affiché à la fin de la partie
+  showBlock(); render();
+}
+function guardRate(){                            // true = la réponse est ignorée
+  if(isBlocked()) return true;
+  const now = performance.now();
+  rate.fast = (now - rate.last < 500) ? rate.fast+1 : 0;
+  rate.last = now;
+  if(rate.fast >= 3){ rate.fast = 0; triggerBlock(); return true; }
+  return false;
+}
+
+// ---- Choix du décor, code promo, trophées cachés ----
+function availBgs(m){ return BGS.filter(b => b.modes.includes(m) && profile.owned[b.id]); }
+function currentBg(m){
+  const c = profile.bgChoice[m];
+  if(c==="none") return null;
+  const av = availBgs(m);
+  return av.find(b => b.id===c) || av[0] || null;
+}
+function renderBgSel(){
+  const av = mode==="flash" ? [] : availBgs(mode);
+  $("bgRow").classList.toggle("hidden", !av.length);
+  if(!av.length) return;
+  const cur = currentBg(mode);
+  $("bgSel").innerHTML = `<option value="none">${T("Aucun")}</option>` + av.map(b => `<option value="${b.id}">${b.ico} ${T(b.name)}</option>`).join("");
+  $("bgSel").value = cur ? cur.id : "none";
+}
+$("bgSel").onchange = () => { profile.bgChoice[mode] = $("bgSel").value; saveProfile(); syncTheme(); };
+
+const CODE_GAINS = [500,250,125,62,31,15,7,3,2,1];   // gains décroissants ; après le dernier code : trophée Fibonacci
+// Code « picsou » réutilisable en suivant la suite de Fibonacci : picsou, picsou1, picsou1, picsou2, picsou3, picsou5, picsou8, picsou13, picsou21, picsou34
+function fib(n){ let a = 0, b = 1; for(let i=0;i<n;i++){ const t = a+b; a = b; b = t; } return a; }
+function picsouCode(k, name){ const f = fib(k); return (name || "picsou") + (f ? f : ""); }
+const CODE_NAMES = ["picsou","dagobert","scrooge"];   // Picsou (FR) · Dagobert (DE) · Scrooge (EN)
+function isPicsou(c, k){ return CODE_NAMES.some(n => c === picsouCode(k, n)); }
+function redeemCode(){
+  const c = $("codeIn").value.trim().toLowerCase();
+  if(!c) return;
+  const used = profile.picsou || 0;
+  if(used < CODE_GAINS.length && isPicsou(c, used)){
+    const gain = CODE_GAINS[used];
+    profile.picsou = used+1; profile.points += gain;
+    saveProfile(); updatePts(); renderShop();
+    $("codeIn").value = "";
+    toast(T("💰 +{n} points !",{n:gain}));
+    if(profile.picsou >= CODE_GAINS.length) awardTrophy("fibonacci");
+  } else if(Array.from({length:Math.min(used, CODE_GAINS.length)}, (_, k) => k).some(k => isPicsou(c, k))){
+    toast(T("Ce code a déjà été utilisé"));
+  } else {
+    toast(T("❌ Code invalide"));
+  }
+}
+$("codeBtn").onclick = redeemCode;
+$("codeIn").onkeydown = e => { if(e.key==="Enter") redeemCode(); };
+if((profile.picsou||0) >= CODE_GAINS.length) awardTrophy("fibonacci");   // suite déjà terminée avant la mise à jour : trophée accordé au démarrage
+
+let flashRun = 0;
+function checkClock(){ const h = new Date().getHours(); if(h>=4 && h<6) awardTrophy("early"); if(h<4) awardTrophy("night"); }
+function checkPerfect(){
+  const perfect = items.length===count && items.every(it => it.first!=null && it.first===it.correct);
+  if(!perfect) return;
+  if(mode==="classic" && count===20) awardTrophy("flawless");
+  if((mode==="classic" || mode==="flash") && count>=3 && range==="full") awardTrophy("timetraveler");
+}
+function noteDate(it){
+  const d = it.date, n = new Date();
+  if(d.getUTCDate()===13 && d.getUTCDay()===5) awardTrophy("lucky");
+  if(d.getUTCDate()===n.getDate() && d.getUTCMonth()===n.getMonth()) awardTrophy("birthday");
+}
+
+// ---- Nouveaux décors (SVG) ----
+function sceneGarden(){
+  let rake = "", ripples = "", petals = "";
+  for(let i=0;i<6;i++) rake += `<path d="M0 ${598+i*20} Q500 ${572+i*20} 1000 ${598+i*20}" stroke="#d3c29c" stroke-width="2" fill="none"/>`;
+  [70,105,140,175].forEach(r => ripples += `<ellipse cx="330" cy="648" rx="${r*1.9}" ry="${r*0.34}" fill="none" stroke="#cdbb92" stroke-width="2"/>`);
+  const bl = [[930,150,34],[890,185,28],[960,210,30],[850,160,24],[900,120,26],[830,355,30],[790,345,24],[870,365,26],[960,390,30],[930,420,24]];
+  const blossom = bl.map(([x,y,r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#f6b3c8" opacity=".9"/><circle cx="${x-r*.3}" cy="${y-r*.3}" r="${r*.55}" fill="#fbd3e0" opacity=".9"/>`).join("");
+  for(let i=0;i<9;i++) petals += `<ellipse class="petal" cx="${620+i*37}" cy="0" rx="6" ry="3.5" fill="#f8c6d6" style="animation-delay:${(i*1.7).toFixed(1)}s;animation-duration:${9+i%4*2}s"/>`;
+  return `<svg viewBox="0 0 1000 700" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+<defs><linearGradient id="zsk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bfe3f5"/><stop offset=".65" stop-color="#fff3e6"/></linearGradient></defs>
+<rect width="1000" height="700" fill="url(#zsk)"/>
+<circle cx="690" cy="160" r="60" fill="#ffb3a7" opacity=".85"/>
+<path d="M180 450 L470 190 Q500 170 530 190 L820 450Z" fill="#a9bfd6"/>
+<path d="M470 190 Q500 170 530 190 L560 222 L528 208 L500 232 L472 208 L440 222Z" fill="#fff"/>
+<ellipse cx="500" cy="445" rx="430" ry="28" fill="#fff" opacity=".55"/>
+<path d="M0 470 Q150 400 320 450 T640 440 T1000 450 L1000 700 L0 700Z" fill="#9cc08a"/>
+<path d="M0 520 Q200 470 400 510 T800 500 T1000 520 L1000 700 L0 700Z" fill="#7fae78"/>
+<g fill="#c0392b"><rect x="668" y="350" width="14" height="130"/><rect x="778" y="350" width="14" height="130"/><rect x="672" y="388" width="116" height="10"/><path d="M650 345 Q730 322 810 345 L802 364 L658 364Z" fill="#2b2b2b"/></g>
+<path d="M0 560 Q500 520 1000 560 L1000 700 L0 700Z" fill="#ecdfc2"/>
+${rake}${ripples}
+<ellipse cx="330" cy="648" rx="38" ry="24" fill="#6f7377"/><ellipse cx="366" cy="658" rx="22" ry="15" fill="#85898d"/><ellipse cx="298" cy="660" rx="16" ry="11" fill="#5d6165"/>
+<g fill="none" stroke="#5b3a29" stroke-linecap="round"><path d="M1000 700 Q930 520 960 380 Q985 260 920 160" stroke-width="18"/><path d="M955 400 Q880 340 800 350" stroke-width="9"/><path d="M930 220 Q850 200 790 150" stroke-width="8"/></g>
+${blossom}${petals}
+</svg>`;
+}
+
+function sceneBamboo(){
+  let stars = "", stalks = "", flies = "";
+  for(let i=0;i<40;i++) stars += `<circle cx="${(i*149)%1000}" cy="${(i*61)%330}" r="${(0.8+(i%3)*0.5).toFixed(1)}" fill="#fff" opacity="${(0.35+(i%4)*0.15).toFixed(2)}"/>`;
+  const xs = [60,130,210,310,700,790,870,950], hs = [520,600,480,560,540,620,500,580];
+  xs.forEach((x,i) => {
+    const top = 700-hs[i];
+    stalks += `<rect x="${x-9}" y="${top}" width="18" height="${hs[i]}" fill="#2f8a5b"/><rect x="${x-9}" y="${top}" width="6" height="${hs[i]}" fill="#47b57d" opacity=".6"/>`;
+    for(let y=top+60; y<700; y+=95) stalks += `<rect x="${x-11}" y="${y}" width="22" height="5" rx="2" fill="#1d5a3a"/>`;
+    for(let k=0;k<3;k++){
+      const y = top+40+k*130, dir = (i+k)%2 ? 1 : -1;
+      stalks += `<ellipse cx="${x+dir*36}" cy="${y}" rx="40" ry="8" fill="#3fa06e" transform="rotate(${dir*-25} ${x} ${y})"/>`;
+    }
+  });
+  for(let i=0;i<14;i++) flies += `<circle class="ember" cx="${60+(i*71)%880}" cy="${420+(i*37)%260}" r="3" fill="#e6ff7a" style="animation-delay:${((i*0.9)%8).toFixed(1)}s;animation-duration:${6+i%5}s"/>`;
+  return `<svg viewBox="0 0 1000 700" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+<defs><linearGradient id="bsk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#050b1c"/><stop offset="1" stop-color="#1d4a5c"/></linearGradient></defs>
+<rect width="1000" height="700" fill="url(#bsk)"/>
+${stars}
+<circle cx="640" cy="170" r="130" fill="#fffbe0" opacity=".12"/><circle cx="640" cy="170" r="85" fill="#fff7cf"/><circle cx="615" cy="150" r="14" fill="#efe6b8" opacity=".6"/><circle cx="665" cy="195" r="9" fill="#efe6b8" opacity=".5"/>
+<ellipse cx="500" cy="690" rx="620" ry="75" fill="#9fd3c0" opacity=".22"/>
+${stalks}${flies}
+</svg>`;
+}
+
+function sceneIsland(){
+  let stars = "", leaves = "", waves = "", refl = "", embers = "";
+  for(let i=0;i<45;i++) stars += `<circle cx="${(i*137)%1000}" cy="${(i*53)%380}" r="${(0.8+(i%3)*0.5).toFixed(1)}" fill="#fff" opacity="${(0.35+(i%4)*0.15).toFixed(2)}"/>`;
+  for(let i=0;i<9;i++) waves += `<path d="M${(i*131)%900} ${470+i*24} q30 -10 60 0 t60 0" stroke="#4b7fb8" stroke-width="2" fill="none" opacity=".35"/>`;
+  [60,52,44,36,28,20].forEach((w,i) => refl += `<rect x="${790-w}" y="${470+i*14}" width="${w*2}" height="5" rx="2" fill="#fff6d0" opacity="${(0.5-i*0.07).toFixed(2)}"/>`);
+  [[-110,40],[-80,-10],[-30,-50],[40,-40],[90,0],[115,45],[0,-70]].forEach(([dx,dy]) => leaves += `<path d="M470 300 Q${470+dx*0.5} ${300+dy-50} ${470+dx} ${300+dy+40}" stroke="#1f7a43" stroke-width="15" fill="none" stroke-linecap="round"/>`);
+  for(let i=0;i<10;i++) embers += `<circle class="ember" cx="${590+(i*13)%40}" cy="${520+(i%3)*6}" r="2.5" fill="#ffb347" style="animation-delay:${(i*0.6).toFixed(1)}s;animation-duration:${3+i%3}s"/>`;
+  return `<svg viewBox="0 0 1000 700" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="isk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#050b1c"/><stop offset="1" stop-color="#17335f"/></linearGradient>
+<linearGradient id="isea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b2a52"/><stop offset="1" stop-color="#04152b"/></linearGradient>
+<linearGradient id="ifl" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ffd24a"/><stop offset=".5" stop-color="#ff7a00"/><stop offset="1" stop-color="#d81e00" stop-opacity=".1"/></linearGradient>
+<radialGradient id="igl" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ffb347" stop-opacity=".55"/><stop offset="1" stop-color="#ff7a00" stop-opacity="0"/></radialGradient>
+</defs>
+<rect width="1000" height="700" fill="url(#isk)"/>
+${stars}
+<circle cx="790" cy="140" r="90" fill="#fff6d0" opacity=".12"/><circle cx="790" cy="140" r="50" fill="#fff6d0"/>
+<rect y="430" width="1000" height="270" fill="url(#isea)"/>
+${waves}${refl}
+<path d="M220 570 Q500 470 780 570 Q500 612 220 570Z" fill="#c9a66b"/>
+<path d="M430 520 Q405 400 470 300" stroke="#5a3b22" stroke-width="20" fill="none" stroke-linecap="round"/>
+${leaves}
+<circle cx="460" cy="312" r="9" fill="#4a2f1a"/><circle cx="482" cy="318" r="9" fill="#4a2f1a"/>
+<circle cx="600" cy="520" r="120" fill="url(#igl)"/>
+<rect x="570" y="544" width="60" height="9" rx="4" fill="#4a2f1a" transform="rotate(8 600 548)"/><rect x="570" y="544" width="60" height="9" rx="4" fill="#5b3a22" transform="rotate(-8 600 548)"/>
+<path class="flame" d="M580 548 Q586 515 600 490 Q614 515 620 548Z" fill="url(#ifl)"/>
+<path class="flame" d="M592 548 Q597 525 600 512 Q605 525 608 548Z" fill="#ffe07a"/>
+${embers}
+</svg>`;
+}
+
+function sceneIce(){
+  let snow = "";
+  for(let i=0;i<22;i++) snow += `<circle class="petal" cx="${(i*47)%1000}" cy="0" r="${3+i%3}" fill="#fff" stroke="#a9d4ee" stroke-width="1" style="animation-delay:${(i*0.8).toFixed(1)}s;animation-duration:${8+i%5*2}s"/>`;
+  return `<svg viewBox="0 0 1000 700" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="icsk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#cfeaff"/><stop offset="1" stop-color="#f7fcff"/></linearGradient>
+<linearGradient id="icsea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5fb4e8"/><stop offset="1" stop-color="#2a7fba"/></linearGradient>
+</defs>
+<rect width="1000" height="700" fill="url(#icsk)"/>
+<path d="M0 150 Q250 60 500 140 T1000 120 L1000 220 Q750 160 500 230 T0 210Z" fill="#5affb4" opacity=".28"/>
+<path d="M0 230 Q250 150 500 220 T1000 200 L1000 290 Q750 240 500 300 T0 290Z" fill="#a98bff" opacity=".22"/>
+<path d="M0 420 L140 300 L240 380 L380 260 L520 400 L640 320 L800 410 L920 300 L1000 360 L1000 520 L0 520Z" fill="#c6dbea"/>
+<rect y="520" width="1000" height="180" fill="url(#icsea)"/>
+<path d="M120 540 L280 330 L350 400 L450 270 L610 540Z" fill="#e6f5fd"/>
+<path d="M450 270 L610 540 L500 540Z" fill="#b9dcf0"/>
+<path d="M280 330 L350 400 L300 540 L200 540Z" fill="#d2eaf8"/>
+<path d="M660 560 L760 440 L820 500 L880 420 L960 560Z" fill="#e6f5fd"/><path d="M880 420 L960 560 L900 560Z" fill="#b9dcf0"/>
+<ellipse cx="300" cy="625" rx="110" ry="18" fill="#fff" opacity=".85"/><ellipse cx="760" cy="650" rx="90" ry="14" fill="#fff" opacity=".8"/>
+<ellipse cx="300" cy="590" rx="22" ry="34" fill="#1b2733"/><ellipse cx="300" cy="596" rx="14" ry="24" fill="#fff"/><circle cx="300" cy="552" r="15" fill="#1b2733"/>
+<polygon points="292,556 308,556 300,566" fill="#f59e0b"/><circle cx="295" cy="548" r="2" fill="#fff"/><circle cx="305" cy="548" r="2" fill="#fff"/>
+${snow}
+</svg>`;
+}
+
+function sceneTrack(){
+  let lanes = "", stands = "";
+  for(let i=1;i<=5;i++) lanes += `<line x1="${300+i*400/6}" y1="330" x2="${-100+i*1200/6}" y2="700" stroke="#fff" stroke-width="4" opacity=".9"/>`;
+  for(let i=0;i<40;i++) stands += `<circle cx="${10+i*25}" cy="${292+(i%3)*8}" r="5" fill="${["#e53935","#fdd835","#1e88e5","#43a047"][i%4]}"/>`;
+  return `<svg viewBox="0 0 1000 700" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="tsk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8fd0ff"/><stop offset="1" stop-color="#e6f6ff"/></linearGradient>
+<clipPath id="tclip"><polygon points="300,330 700,330 1100,700 -100,700"/></clipPath>
+<pattern id="chk" width="40" height="40" patternUnits="userSpaceOnUse"><rect width="40" height="40" fill="#fff"/><rect width="20" height="20" fill="#111"/><rect x="20" y="20" width="20" height="20" fill="#111"/></pattern>
+</defs>
+<rect width="1000" height="330" fill="url(#tsk)"/>
+<circle cx="150" cy="110" r="50" fill="#fff59d" opacity=".9"/>
+<rect y="270" width="1000" height="60" fill="#5c6bc0" opacity=".55"/>
+${stands}
+<rect y="330" width="1000" height="370" fill="#5aa85a"/>
+<polygon points="300,330 700,330 1100,700 -100,700" fill="#c9492b"/>
+${lanes}
+<g clip-path="url(#tclip)"><rect x="0" y="540" width="1000" height="36" fill="url(#chk)"/></g>
+</svg>`;
+}
+
+function sceneNeon(){
+  let grid = "", stars = "", streaks = "", bars = "";
+  [405,415,432,458,495,545,610,690].forEach(y => grid += `<line x1="0" y1="${y}" x2="1000" y2="${y}" stroke="#00e5ff" stroke-width="2" opacity=".7"/>`);
+  for(let k=-10;k<=10;k++) grid += `<line x1="${500+k*12}" y1="400" x2="${500+k*120}" y2="700" stroke="#00e5ff" stroke-width="2" opacity=".6"/>`;
+  for(let i=0;i<40;i++) stars += `<circle cx="${(i*149)%1000}" cy="${(i*47)%300}" r="1.2" fill="#fff" opacity=".6"/>`;
+  for(let i=0;i<9;i++) streaks += `<line x1="${(i*211)%300}" y1="${60+i*38}" x2="${270+(i*211)%300}" y2="${60+i*38}" stroke="${i%2 ? "#00e5ff" : "#ff2e93"}" stroke-width="3" opacity=".35" stroke-linecap="round"/>`;
+  for(let i=0;i<7;i++) bars += `<rect x="340" y="${340+i*18}" width="320" height="${2+i*2}" fill="#000"/>`;
+  return `<svg viewBox="0 0 1000 700" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="nsk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#12002b"/><stop offset=".55" stop-color="#6a0572"/><stop offset="1" stop-color="#ff2e93"/></linearGradient>
+<linearGradient id="nsun" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe14d"/><stop offset="1" stop-color="#ff2e93"/></linearGradient>
+<mask id="nm"><rect width="1000" height="700" fill="#fff"/>${bars}</mask>
+</defs>
+<rect width="1000" height="400" fill="url(#nsk)"/>
+${stars}
+<circle cx="500" cy="340" r="150" fill="url(#nsun)" mask="url(#nm)"/>
+<rect y="400" width="1000" height="300" fill="#12002b"/>
+<rect y="398" width="1000" height="4" fill="#00e5ff"/>
+${grid}${streaks}
+</svg>`;
+}
+
+function sceneSpring(){
+  let fl = "";
+  const cols = ["#ff7eb6","#ffd54f","#fff","#b388ff","#ff8a65"];
+  for(let i=0;i<70;i++){
+    const x = (i*97)%1000, y = 500+(i*53)%190;
+    fl += `<line x1="${x}" y1="${y}" x2="${x}" y2="${y+16}" stroke="#3e8e41" stroke-width="2"/><circle cx="${x}" cy="${y}" r="${5+i%3}" fill="${cols[i%5]}"/><circle cx="${x}" cy="${y}" r="2" fill="#ffeb3b"/>`;
+  }
+  return `<svg viewBox="0 0 1000 700" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+<defs><linearGradient id="spk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bfe9ff"/><stop offset="1" stop-color="#f4fcff"/></linearGradient></defs>
+<rect width="1000" height="700" fill="url(#spk)"/>
+<circle cx="820" cy="130" r="85" fill="#fff9c4" opacity=".55"/><circle cx="820" cy="130" r="60" fill="#fff176"/>
+<g fill="#fff" opacity=".92"><ellipse cx="200" cy="120" rx="70" ry="26"/><ellipse cx="260" cy="105" rx="55" ry="26"/><ellipse cx="320" cy="122" rx="60" ry="24"/><ellipse cx="560" cy="210" rx="60" ry="22"/><ellipse cx="615" cy="196" rx="45" ry="22"/></g>
+<path d="M0 440 Q250 360 520 430 T1000 410 L1000 700 L0 700Z" fill="#9bd36a"/>
+<path d="M0 520 Q300 460 600 520 T1000 500 L1000 700 L0 700Z" fill="#7cc255"/>
+${fl}
+</svg>`;
+}
+
+function sceneSummer(){
+  let rays = "", waves = "";
+  for(let i=0;i<12;i++){ const a = i*30*Math.PI/180; rays += `<line x1="${(800+95*Math.cos(a)).toFixed(1)}" y1="${(140+95*Math.sin(a)).toFixed(1)}" x2="${(800+135*Math.cos(a)).toFixed(1)}" y2="${(140+135*Math.sin(a)).toFixed(1)}" stroke="#ffca28" stroke-width="8" stroke-linecap="round"/>`; }
+  for(let i=0;i<6;i++) waves += `<path d="M${(i*170)%900-40} ${430+i*14} q30 -14 60 0 t60 0 t60 0" stroke="#fff" stroke-width="3" fill="none" opacity=".6"/>`;
+  return `<svg viewBox="0 0 1000 700" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="susk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4fc3f7"/><stop offset="1" stop-color="#e1f5fe"/></linearGradient>
+<linearGradient id="susea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#29b6f6"/><stop offset="1" stop-color="#0288d1"/></linearGradient>
+</defs>
+<rect width="1000" height="700" fill="url(#susk)"/>
+<g style="transform-origin:800px 140px;animation:spin 90s linear infinite">${rays}</g>
+<circle cx="800" cy="140" r="75" fill="#ffd54f"/>
+<path d="M600 180 q15 -15 30 0 q15 -15 30 0" stroke="#455a64" stroke-width="3" fill="none"/><path d="M680 230 q12 -12 24 0 q12 -12 24 0" stroke="#455a64" stroke-width="3" fill="none"/>
+<rect y="400" width="1000" height="130" fill="url(#susea)"/>
+${waves}
+<path d="M0 520 Q250 500 500 525 T1000 510 L1000 700 L0 700Z" fill="#f6d58f"/>
+<path d="M0 522 Q250 502 500 527 T1000 512" stroke="#fff" stroke-width="5" fill="none" opacity=".8"/>
+<line x1="250" y1="520" x2="250" y2="610" stroke="#6d4c41" stroke-width="6"/>
+<path d="M150 520 A100 70 0 0 1 350 520Z" fill="#e53935"/><path d="M200 507 L250 450 L250 520Z" fill="#fff"/><path d="M300 507 L250 450 L250 520Z" fill="#fff"/>
+<rect x="380" y="600" width="140" height="60" rx="6" fill="#29b6f6"/><rect x="400" y="600" width="12" height="60" fill="#fff"/><rect x="440" y="600" width="12" height="60" fill="#fff"/><rect x="480" y="600" width="12" height="60" fill="#fff"/>
+</svg>`;
+}
+
+function sceneAutumn(){
+  let trees = "", leaves = "", pump = "";
+  const cols = ["#e65100","#f57c00","#c62828","#fbc02d","#ef6c00"];
+  [[120,500],[300,470],[620,490],[840,460],[960,520]].forEach(([x,y],i) => {
+    trees += `<rect x="${x-10}" y="${y}" width="20" height="${700-y}" fill="#5d4037"/>` +
+      [[0,-20,70],[-45,10,55],[45,10,55]].map(([dx,dy,r],k) => `<circle cx="${x+dx}" cy="${y+dy}" r="${r}" fill="${cols[(i+k)%5]}" opacity=".95"/>`).join("");
+  });
+  for(let i=0;i<16;i++) leaves += `<ellipse class="petal" cx="${(i*61)%1000}" cy="0" rx="9" ry="5" fill="${cols[i%5]}" style="animation-delay:${(i*0.9).toFixed(1)}s;animation-duration:${8+i%4*2}s"/>`;
+  [[430,655],[470,670],[760,650]].forEach(([x,y]) => pump += `<ellipse cx="${x}" cy="${y}" rx="26" ry="19" fill="#ef6c00"/><rect x="${x-3}" y="${y-26}" width="6" height="10" fill="#33691e"/>`);
+  return `<svg viewBox="0 0 1000 700" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+<defs><linearGradient id="aut" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe0b2"/><stop offset="1" stop-color="#fff3e0"/></linearGradient></defs>
+<rect width="1000" height="700" fill="url(#aut)"/>
+<circle cx="200" cy="300" r="70" fill="#ffcc80"/>
+<path d="M0 520 Q300 440 600 520 T1000 500 L1000 700 L0 700Z" fill="#c8a24a"/>
+<path d="M0 600 Q300 540 600 600 T1000 590 L1000 700 L0 700Z" fill="#8d6e3f"/>
+${trees}${pump}${leaves}
+</svg>`;
+}
+
+function sceneWinter(){
+  let pines = "", snow = "";
+  [[110,480,1.1],[260,520,.8],[620,500,.9],[870,470,1.2],[960,540,.7]].forEach(([x,y,s]) => {
+    pines += `<rect x="${x-8*s}" y="${y}" width="${16*s}" height="${40*s}" fill="#5d4037"/>`;
+    [0,1,2].forEach(k => {
+      const w = (90-k*20)*s, yy = y-k*45*s;
+      pines += `<polygon points="${x},${yy-70*s} ${x-w/2},${yy} ${x+w/2},${yy}" fill="#1b5e20"/><polygon points="${x},${yy-70*s} ${x-w/5},${yy-42*s} ${x+w/5},${yy-42*s}" fill="#fff"/>`;
+    });
+  });
+  for(let i=0;i<24;i++) snow += `<circle class="petal" cx="${(i*43)%1000}" cy="0" r="${2.5+i%3}" fill="#fff" stroke="#b0c4d4" stroke-width="1" style="animation-delay:${(i*0.7).toFixed(1)}s;animation-duration:${8+i%5*2}s"/>`;
+  return `<svg viewBox="0 0 1000 700" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+<defs><linearGradient id="wik" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b0bec5"/><stop offset="1" stop-color="#eceff1"/></linearGradient></defs>
+<rect width="1000" height="700" fill="url(#wik)"/>
+<circle cx="200" cy="120" r="45" fill="#fff" opacity=".85"/>
+<path d="M0 520 Q300 470 600 530 T1000 500 L1000 700 L0 700Z" fill="#fff"/>
+<path d="M0 610 Q300 570 600 620 T1000 600 L1000 700 L0 700Z" fill="#e3f2fd"/>
+${pines}
+<circle cx="730" cy="610" r="40" fill="#fff" stroke="#cfd8dc" stroke-width="2"/><circle cx="730" cy="560" r="28" fill="#fff" stroke="#cfd8dc" stroke-width="2"/><circle cx="730" cy="522" r="20" fill="#fff" stroke="#cfd8dc" stroke-width="2"/>
+<polygon points="730,522 758,526 730,530" fill="#ef6c00"/><circle cx="724" cy="516" r="2.5" fill="#222"/><circle cx="737" cy="516" r="2.5" fill="#222"/>
+<rect x="716" y="492" width="28" height="10" fill="#37474f"/><rect x="710" y="500" width="40" height="4" fill="#37474f"/>
+${snow}
+</svg>`;
+}
+
+// ---- Traduction : éléments dynamiques ----
+const RESULT_LABELS = {
+  zen:["Score (0 à 20)","Taux de réussite","Temps total","Temps / bonne réponse"],
+  streak:["Dates d'affilée","Temps par date","Temps total","Temps moyen / date"],
+  sprint:["Score (bonnes × réussite)","Taux de réussite","Bonnes / fausses","Temps / bonne réponse"]
+};
+function applyResultLabels(){ document.querySelectorAll("#resultCard .k").forEach((e,i) => e.textContent = T(RESULT_LABELS[resultKind][i])); }
+function setSave(k){ saveKey = k; $("saveBtn").textContent = T(k); }
+function tName(t){ return T(t.name); }
+function tHow(t){ const v = {}; if(t.vars) for(const k in t.vars) v[k] = T(t.vars[k]); return T(t.how, t.vars ? v : undefined); }
+function centLabel(c){ return c + (lang==="de" ? "er" : "s"); }
+function renderTheoryLists(){
+  $("thDays").innerHTML = DAYS_SUN0.map((n,i)=>chip(n,i)).join("");
+  $("thMonths").innerHTML = MONTHS.map((n,i)=>chip(n,MONTH_CODE[i])).join("");
+  $("thCent").innerHTML = [1600,1700,1800,1900,2000,2100,2200,2300].map(c=>chip(centLabel(c),centuryCode(c))).join("");
+}
+function refreshAll(){
+  $("langSel").value = lang;
+  buildDays(); renderTheoryLists(); renderCalc(); qzRender();
+  updatePts(); updateFlame(); applyResultLabels(); updateCost();
+  $("startBtn").textContent = T(startKey); $("stopBtn").textContent = T(stopKey); $("saveBtn").textContent = T(saveKey);
+  showGain(gainN);
+  $("thFb").textContent = "";
+  if(isBlocked()) showBlock();
+  if(running && isComp()) renderCompInfo();
+  renderShop(); renderTrophies();
+  applyMode();
+  render();
+}
+
+// ---- Décors par mode ----
+function isComp(){ return mode==="streak" || mode==="sprint"; }   // modes avec une seule date à la fois et un chrono
+
+function sceneZen(){
+  let rings = "";
+  [330,370,410,450].forEach((r,i) => rings += `<circle cx="500" cy="350" r="${r}" fill="none" stroke="#111" stroke-opacity="${(0.07-i*0.012).toFixed(3)}" stroke-width="3"/>`);
+  return `<svg viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+<defs><radialGradient id="zbg" cx=".5" cy=".5" r=".75"><stop offset="0" stop-color="#fbf8f1"/><stop offset="1" stop-color="#d9dfe3"/></radialGradient></defs>
+<rect width="1000" height="700" fill="url(#zbg)"/>
+${rings}
+<g class="yy">
+<circle cx="500" cy="350" r="280" fill="#fff" stroke="#111" stroke-width="6"/>
+<path d="M500 70 a280 280 0 0 1 0 560 a140 140 0 0 1 0 -280 a140 140 0 0 0 0 -280 z" fill="#111"/>
+<circle cx="500" cy="210" r="46" fill="#111"/>
+<circle cx="500" cy="490" r="46" fill="#fff"/>
+</g>
+</svg>`;
+}
+
+function sceneFire(){
+  let flames = "", inner = "", embers = "";
+  for(let i=0;i<18;i++){
+    const x = -20+i*58, h = 90+((i*37)%70), w = 64;
+    flames += `<path class="flame" d="M${x} 700 Q${x+6} ${700-h*.5} ${x+w/2} ${700-h} Q${x+w-6} ${700-h*.5} ${x+w} 700Z" fill="url(#ffl)" style="animation-delay:${((i*0.23)%0.9).toFixed(2)}s"/>`;
+    inner += `<path class="flame" d="M${x+14} 700 Q${x+18} ${700-h*.35} ${x+w/2} ${700-h*.62} Q${x+w-18} ${700-h*.35} ${x+w-14} 700Z" fill="#ffd24a" opacity=".8" style="animation-delay:${((i*0.31)%0.9).toFixed(2)}s"/>`;
+  }
+  for(let i=0;i<26;i++){
+    const x = 40+((i*83)%920), y = 380+((i*47)%300), r = 1.5+(i%3);
+    embers += `<circle class="ember" cx="${x}" cy="${y}" r="${r}" fill="${i%2 ? "#ffb347" : "#ff5a1f"}" style="animation-delay:${((i*0.7)%7).toFixed(1)}s;animation-duration:${5+i%5}s"/>`;
+  }
+  return `<svg viewBox="0 0 1000 700" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="fsk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#12030a"/><stop offset=".55" stop-color="#5c0f0a"/><stop offset="1" stop-color="#ff6a00"/></linearGradient>
+<radialGradient id="fgl" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ffd24a" stop-opacity=".95"/><stop offset="1" stop-color="#ff4500" stop-opacity="0"/></radialGradient>
+<linearGradient id="ffl" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ffd24a"/><stop offset=".5" stop-color="#ff7a00"/><stop offset="1" stop-color="#d81e00" stop-opacity=".1"/></linearGradient>
+</defs>
+<rect width="1000" height="700" fill="url(#fsk)"/>
+<g fill="#2a0a06" opacity=".8"><circle cx="500" cy="150" r="90"/><circle cx="425" cy="100" r="70"/><circle cx="585" cy="90" r="80"/><circle cx="500" cy="40" r="70"/></g>
+<circle cx="500" cy="270" r="170" fill="url(#fgl)"/>
+<path d="M100 700 L400 285 Q430 258 462 264 L538 264 Q570 258 600 285 L900 700Z" fill="#1c0907"/>
+<path d="M468 264 L532 264 L548 335 L522 405 L562 485 L522 565 L566 700 L466 700 L500 565 L466 485 L496 405 L468 335Z" fill="#ff6a00" opacity=".92"/>
+<path d="M492 264 L520 264 L516 335 L504 405 L520 485 L498 565 L512 700 L490 700 L488 565 L500 485 L486 405 L496 335Z" fill="#ffd24a" opacity=".75"/>
+<ellipse cx="500" cy="264" rx="62" ry="14" fill="#ffd24a"/>
+${flames}${inner}${embers}
+</svg>`;
+}
+
+function sceneChrono(){
+  let ticks = "", nums = "", lines = "";
+  for(let i=0;i<60;i++){
+    const a = i*6*Math.PI/180, big = i%5===0, r1 = 215, r2 = r1-(big?22:10);
+    ticks += `<line x1="${500+r1*Math.sin(a)}" y1="${380-r1*Math.cos(a)}" x2="${500+r2*Math.sin(a)}" y2="${380-r2*Math.cos(a)}" stroke="#1f2a44" stroke-width="${big?5:2}"/>`;
+  }
+  for(let i=0;i<12;i++){
+    const a = i*30*Math.PI/180, n = i===0 ? 60 : i*5;
+    nums += `<text x="${500+168*Math.sin(a)}" y="${380-168*Math.cos(a)}" font-size="28" font-weight="700" fill="#1f2a44" text-anchor="middle" dominant-baseline="central">${n}</text>`;
+  }
+  for(let i=0;i<7;i++) lines += `<line x1="${20+(i*37)%90}" y1="${210+i*55}" x2="${190+(i*53)%110}" y2="${210+i*55}" stroke="#3b5bdb" stroke-width="4" stroke-linecap="round" opacity=".25"/>`;
+  return `<svg viewBox="0 0 1000 700" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+<defs><linearGradient id="csk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f3f7fb"/><stop offset="1" stop-color="#d6e3f2"/></linearGradient></defs>
+<rect width="1000" height="700" fill="url(#csk)"/>
+${lines}
+<rect x="480" y="70" width="40" height="30" rx="6" fill="#3b5bdb"/><rect x="490" y="98" width="20" height="30" fill="#3b5bdb"/>
+<rect x="582" y="130" width="34" height="24" rx="6" fill="#3b5bdb" transform="rotate(40 500 380)"/>
+<circle cx="500" cy="380" r="250" fill="#fff" opacity=".6" stroke="#3b5bdb" stroke-width="14"/>
+<circle cx="500" cy="380" r="228" fill="none" stroke="#9db4ff" stroke-width="3"/>
+<path d="M500 180 A200 200 0 0 1 690 318" fill="none" stroke="#e03131" stroke-width="12" stroke-linecap="round" opacity=".55"/>
+${ticks}${nums}
+<g class="hand"><line x1="500" y1="420" x2="500" y2="190" stroke="#e03131" stroke-width="5" stroke-linecap="round"/><circle cx="500" cy="380" r="12" fill="#e03131"/></g>
+</svg>`;
+}
+const SCENES = {classic:sceneZen, streak:sceneFire, sprint:sceneChrono};
+let sceneMode = null;
+function syncTheme(){
+  const bg = mode==="flash" ? null : currentBg(mode);   // décor choisi pour ce mode (parmi ceux achetés)
+  document.body.dataset.mode = mode;
+  if(bg){ document.body.dataset.bg = bg.id; document.body.dataset.tone = bg.tone; }
+  else { delete document.body.dataset.bg; delete document.body.dataset.tone; }
+  const key = bg ? bg.id : "";
+  if(sceneMode !== key){ sceneMode = key; $("bgScene").innerHTML = bg ? bg.fn() : ""; }
+  const fl = mode==="flash", black = fl && running && items[active] && items[active].masked;
+  document.body.classList.toggle("fl-white", fl);
+  document.body.classList.toggle("fl-run", fl && running);
+  document.body.classList.toggle("fl-black", !!black);
+}
+
+// ---- Modes compétition : « Série » (temps par date) et « 5 minutes » ----
+let mode = "classic", comp = null;
+const SPRINT_MS = 5*60*1000;
+let resultKind = "zen", startKey = "Démarrer", stopKey = "Terminer", saveKey = "Enregistrer le score", gainN = 0;
+const MODE_HELP = {
+  streak: "Survie : tu as le temps choisi pour trouver une date, puis la suivante… La partie s'arrête à la première erreur ou quand le temps est écoulé. Pas de pause.",
+  sprint: "Sprint : 5 minutes pour trouver un maximum de dates. Les fautes sont permises mais font baisser le taux de réussite. Score = bonnes réponses × taux de réussite. Pas de pause.",
+  flash: "Flash : la date s'affiche 4 secondes sur fond blanc, puis l'écran passe au noir : retrouve le jour de mémoire."
+};
+function limitSec(){ return Math.max(5, Math.min(300, Math.round(+$("limitIn").value) || 10)); }
+function hsId(){ return mode==="streak" ? "s"+limitSec() : mode==="sprint" ? "m5" : count; }
+function hsTitle(){ return mode==="streak" ? T("Survie · {s} s par date",{s:limitSec()}) : mode==="sprint" ? T("Sprint · 5 minutes") : T((mode==="flash" ? "Flash" : "Zen")+" · {n} "+(count>1 ? "dates" : "date"), {n:count}); }
+function fmtScore(s){ return mode==="streak" ? String(s) : mode==="sprint" ? s.toFixed(1) : s.toFixed(2); }
+function newItem(){ const d = randomDate(); return {date:d, correct:weekdayIdx(d), answer:null, masked:false}; }
+
+function applyMode(){
+  $("modeSeg").querySelectorAll("button").forEach(b => {
+    b.classList.toggle("on", b.dataset.m===mode);
+    b.textContent = (modeOwned(b.dataset.m) ? "" : "🔒 ") + T(NAMES[b.dataset.m]);
+  });
+  $("streakRow").classList.toggle("hidden", mode!=="streak");
+  $("countLbl").classList.toggle("hidden", isComp());
+  $("countSeg").classList.toggle("hidden", isComp());
+  $("modeHelp").classList.toggle("hidden", mode==="classic");
+  $("modeHelp").textContent = T(MODE_HELP[mode] || "");
+  $("memMode").checked = mode==="flash";   // Flash = ancien « mode mémoire »
+  renderBgSel();
+  syncTheme();
+  renderHs();
+  updateCost();
+}
+
+function startComp(){
+  const now = performance.now();
+  comp = {ok:0, wrong:0, tStart:now, last:"", sumOk:0, dateStart:now, span: mode==="streak" ? limitSec()*1000 : SPRINT_MS};
+  comp.deadline = now + comp.span;
+  items = [newItem()]; active = 0; running = true; lastResult = null;
+  clearInterval(tick); tick = setInterval(compTick, 100);
+  $("playCard").classList.remove("hidden");
+  $("resultCard").classList.add("hidden");
+  startKey = "Recommencer"; $("startBtn").textContent = T(startKey);
+  $("stopBtn").classList.remove("hidden");
+  lockSettings(true);
+  scheduleMask();
+  render(); renderCompInfo(); compTick();
+  items.forEach(noteDate);
+}
+function compTick(){
+  if(!running || !isComp()) return;
+  const left = comp.deadline - performance.now();
+  if(left <= 0){ endComp("time"); return; }
+  $("timer").textContent = fmtTime(left);
+  $("timer").classList.toggle("low", left < 3000);
+  $("barFill").style.width = (100*left/comp.span)+"%";
+}
+function renderCompInfo(){
+  $("compInfo").innerHTML = (mode==="streak" ? T("Série : <b>{n}</b>",{n:comp.ok}) : `✓ <b>${comp.ok}</b> · ✗ <b>${comp.wrong}</b>`)
+    + (comp.last ? ` <span class="label">${comp.last}</span>` : "");
+}
+function answerComp(i){
+  const now = performance.now();
+  if(now >= comp.deadline){ endComp("time"); return; }   // réponse trop tardive
+  const it = items[0], good = i===it.correct;
+  if(mode==="streak"){
+    if(!good){ it.answer = i; endComp("wrong"); return; }
+    const left = comp.deadline - now;
+    const took = now - comp.dateStart, g = took < 3000 ? 3 : took < 5000 ? 2 : 1;
+    comp.gain = (comp.gain||0) + g;
+    comp.ok++; addPoints(g); comp.sumOk += now - comp.dateStart; comp.dateStart = now; comp.deadline = now + comp.span;
+    if(left<1000) awardTrophy("coolhead");
+    if(comp.ok>=20) awardTrophy("machine");
+  } else {
+    if(good){ comp.ok++; addPoints(1); comp.last = "✓"; }
+    else { comp.wrong++; comp.last = `✗ ${fmtDate(it.date)} = ${DAYS[it.correct]}`; }
+  }
+  items = [newItem()]; active = 0;
+  scheduleMask(); render(); renderCompInfo(); compTick();
+  noteDate(items[0]);
+}
+function endComp(reason){
+  if(!running) return;
+  running = false;
+  const now = performance.now();
+  clearInterval(tick); clearTimeout(memTimer);
+  const total = Math.min(now, comp.deadline) - comp.tStart;
+  const ok = comp.ok, wrong = mode==="sprint" ? comp.wrong : (reason==="wrong" ? 1 : 0);
+  const answered = ok+wrong, rate = answered ? ok/answered : 0;
+  const per = ok ? total/1000/ok : null;
+  const score = mode==="streak" ? ok : ok*rate;
+  lastResult = {score, rate: mode==="streak" ? null : rate, per, total, n:hsId(), mem:$("memMode").checked, range, ok, answered, mode};
+  const it = items[0];
+  comp.last = reason==="time" ? T("Temps écoulé") + (mode==="streak" ? T(" – c'était {d}",{d:DAYS[it.correct]}) : "")
+            : reason==="wrong" ? T("Erreur – c'était {d}",{d:DAYS[it.correct]}) : T("Abandon");
+  renderCompInfo();
+  $("timer").textContent = fmtTime(total);
+  $("timer").classList.remove("low");
+  const K = document.querySelectorAll("#resultCard .k"), V = [$("rScore"),$("rRate"),$("rTime"),$("rPer")];
+  const labels = mode==="streak" ? ["Dates d'affilée","Temps par date","Temps total","Temps moyen / date"]
+                                 : ["Score (bonnes × réussite)","Taux de réussite","Bonnes / fausses","Temps / bonne réponse"];
+  const vals = mode==="streak" ? [ok, limitSec()+" s", fmtTime(total), per ? per.toFixed(1)+" s" : "–"]
+                               : [score.toFixed(1), Math.round(rate*100)+" %", ok+" / "+wrong, per ? per.toFixed(1)+" s" : "–"];
+  resultKind = mode; applyResultLabels(); vals.forEach((v,i) => { V[i].textContent = v; });
+  $("resultCard").classList.remove("hidden");
+  $("saveRow").classList.toggle("hidden", ok===0);
+  showGain(mode==="streak" ? (comp.gain||0) : ok); checkSpeedComp(ok);
+  if(answered>0){ touchFlame(); checkClock(); }
+  flushTrophies();
+  $("saveBtn").disabled = false; setSave("Enregistrer le score");
+  $("stopBtn").classList.add("hidden");
+  lockSettings(false);
+  render();
+  $("nameInput").value = loadName();
+}
+$("modeSeg").querySelectorAll("button").forEach(b => b.onclick = () => { if(!modeOwned(b.dataset.m)){ lockedHint(b.dataset.m); return; } mode = b.dataset.m; applyMode(); });
+function syncLimitSeg(){ const v = limitSec(); $("limitSeg").querySelectorAll("button").forEach(b => b.classList.toggle("on", +b.dataset.s===v)); }
+$("limitIn").oninput = () => { syncLimitSeg(); renderHs(); };
+$("limitSeg").querySelectorAll("button").forEach(b => b.onclick = () => { $("limitIn").value = b.dataset.s; syncLimitSeg(); renderHs(); });
+
+buildDays();
+initTheory();
+updatePts();
+updateFlame();
+applyMode();
+// Bonus quotidien : 10 points offerts au premier lancement de chaque jour (filet de sécurité)
+(function(){
+  const day = new Date().toLocaleDateString("sv");   // AAAA-MM-JJ, heure locale
+  if(profile.daily === day) return;
+  profile.daily = day; profile.points += 10; saveProfile(); updatePts();
+  setTimeout(() => toast(T("🎁 Bonus du jour : +10 points !")), 600);
+})();
+if(flameState().st==="out") toast(T("💨 Ta flamme est éteinte : rallume-la dans la boutique (10 pts)"));
+if(isBlocked()) showBlock();
+$("startBtn").textContent = T(startKey); $("stopBtn").textContent = T(stopKey); $("saveBtn").textContent = T(saveKey);
+applyResultLabels();
+$("langSel").value = lang;
+$("langSel").onchange = () => setLang($("langSel").value);
+i18nReady = true;
+renderHs();
+render();
+
+// Application installable / hors ligne (nécessite https ou localhost)
+if("serviceWorker" in navigator && location.protocol!=="file:"){
+  navigator.serviceWorker.register("sw.js").catch(()=>{});
+}
+</script>
+</body>
+</html>
